@@ -73,38 +73,54 @@ export function useHomescreen() {
   }, [])
 
   const addBookmark = useCallback((url, name) => {
+    const targetIdx = data.pages.findIndex((page, idx) => idx >= currentPage && page.items.length < 20)
+
     setData((prev) => {
-      const pages = prev.pages.map((page, idx) => {
-        if (idx !== currentPage) return page
-        if (page.items.length >= 20) return page
-        return {
-          ...page,
-          items: [
-            ...page.items,
-            { id: crypto.randomUUID(), type: 'bookmark', name, url },
-          ],
-        }
-      })
-      return { ...prev, pages }
+      let pages = prev.pages
+      let resolvedIdx = targetIdx
+
+      if (resolvedIdx === -1) {
+        pages = [...prev.pages, { id: crypto.randomUUID(), items: [] }]
+        resolvedIdx = pages.length - 1
+      }
+
+      return {
+        ...prev,
+        pages: pages.map((page, idx) => {
+          if (idx !== resolvedIdx) return page
+          return { ...page, items: [...page.items, { id: crypto.randomUUID(), type: 'bookmark', name, url }] }
+        }),
+      }
     })
-  }, [currentPage])
+
+    const newPage = targetIdx !== -1 ? targetIdx : data.pages.length
+    if (newPage !== currentPage) setCurrentPage(newPage)
+  }, [currentPage, data.pages])
 
   const addFolder = useCallback((name) => {
+    const targetIdx = data.pages.findIndex((page, idx) => idx >= currentPage && page.items.length < 20)
+
     setData((prev) => {
-      const pages = prev.pages.map((page, idx) => {
-        if (idx !== currentPage) return page
-        if (page.items.length >= 20) return page
-        return {
-          ...page,
-          items: [
-            ...page.items,
-            { id: crypto.randomUUID(), type: 'folder', name, items: [] },
-          ],
-        }
-      })
-      return { ...prev, pages }
+      let pages = prev.pages
+      let resolvedIdx = targetIdx
+
+      if (resolvedIdx === -1) {
+        pages = [...prev.pages, { id: crypto.randomUUID(), items: [] }]
+        resolvedIdx = pages.length - 1
+      }
+
+      return {
+        ...prev,
+        pages: pages.map((page, idx) => {
+          if (idx !== resolvedIdx) return page
+          return { ...page, items: [...page.items, { id: crypto.randomUUID(), type: 'folder', name, items: [] }] }
+        }),
+      }
     })
-  }, [currentPage])
+
+    const newPage = targetIdx !== -1 ? targetIdx : data.pages.length
+    if (newPage !== currentPage) setCurrentPage(newPage)
+  }, [currentPage, data.pages])
 
   const deleteItem = useCallback((itemId, pageId) => {
     setData((prev) => {
