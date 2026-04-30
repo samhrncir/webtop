@@ -1,0 +1,21 @@
+.clock {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.clock-colon {
+  opacity: 0.6;
+  margin: 0 1px;
+}
+
+.clock-suffix {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.6;
+  margin-left: 2px;
+  letter-spacing: 0;
+}

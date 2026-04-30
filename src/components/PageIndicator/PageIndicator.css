@@ -1,0 +1,59 @@
+.page-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bottom-bar-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border);
+  transition: background 0.25s;
+}
+
+.page-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot-inactive);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, width 0.2s;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.page-dot.active {
+  background: var(--accent);
+  width: 22px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.page-dot:hover:not(.active) {
+  background: var(--surface-hover);
+  transform: scale(1.2);
+}
+
+.page-add-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  border: 1.5px solid var(--accent-border);
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, color 0.15s;
+  margin-left: 4px;
+}
+
+.page-add-btn:hover {
+  background: var(--accent-border);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}

@@ -1,0 +1,119 @@
+.auth-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-gradient);
+}
+
+.auth-card {
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.auth-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 4px var(--accent-glow);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.auth-input:focus {
+  border-color: var(--accent-border);
+}
+
+.auth-input::placeholder {
+  color: var(--text-muted);
+}
+
+.auth-error {
+  color: #f87171;
+  font-size: 13px;
+  text-align: center;
+}
+
+.auth-message {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.auth-submit {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

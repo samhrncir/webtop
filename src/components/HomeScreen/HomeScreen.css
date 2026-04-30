@@ -1,0 +1,229 @@
+.homescreen {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.homescreen-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+}
+
+.homescreen-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.homescreen-toolbar-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.homescreen-toolbar-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.homescreen-toolbar-btn.edit-active {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: #a78bfa;
+}
+
+.homescreen-grid-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.homescreen-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 72px);
+  grid-auto-rows: 96px;
+  gap: 16px;
+  padding: 56px 24px 24px;
+  justify-content: center;
+  align-content: start;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* DnD overlay style */
+.dnd-drag-overlay {
+  opacity: 0.85;
+  transform: scale(1.08);
+  filter: drop-shadow(0 8px 24px var(--accent-glow));
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Sortable item wrapper */
+.sortable-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sortable-item.is-dragging {
+  opacity: 0.3;
+}
+
+/* Drop-over highlight for folders */
+.folder-drop-target .folder-icon-preview {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px var(--accent), 0 0 20px var(--accent-glow);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+/* FAB add button */
+.homescreen-fab {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: #ffffff;
+  font-size: 28px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px var(--accent-glow);
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  z-index: 40;
+}
+
+.homescreen-fab:hover {
+  background: var(--accent-hover);
+  transform: scale(1.08);
+  box-shadow: 0 8px 28px var(--accent-glow);
+}
+
+.homescreen-fab:active {
+  transform: scale(0.96);
+}
+
+/* Hidden file input */
+.hidden-file-input {
+  display: none;
+}
+
+/* Edit mode import/export bar */
+.edit-mode-bar {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 30;
+}
+
+.edit-mode-bar-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.edit-mode-bar-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* Page nav edge zones */
+.page-nav-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 64px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-nav-zone--left  { left: 0; }
+.page-nav-zone--right { right: 0; }
+
+.page-nav-btn {
+  opacity: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 28px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.15s, transform 0.15s;
+  padding-bottom: 2px;
+}
+
+.page-nav-zone:hover .page-nav-btn {
+  opacity: 1;
+}
+
+.page-nav-btn:hover {
+  background: var(--surface-hover);
+  transform: scale(1.1);
+}
+
+.page-nav-btn:active {
+  transform: scale(0.95);
+}
+
+/* Page empty hint */
+.homescreen-empty-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 15px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.homescreen-empty-hint p {
+  margin-top: 8px;
+  font-size: 13px;
+}
