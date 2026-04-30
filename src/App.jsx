@@ -50,6 +50,7 @@ function HomescreenApp() {
             deleteItem={deleteItem}
             renameItem={renameItem}
             reorderItems={reorderItems}
+            moveItem={moveItem}
             addToFolder={addToFolder}
             removeFromFolder={removeFromFolder}
             ejectFromFolder={ejectFromFolder}

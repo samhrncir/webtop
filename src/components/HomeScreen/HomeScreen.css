@@ -197,7 +197,8 @@
   padding-bottom: 2px;
 }
 
-.page-nav-zone:hover .page-nav-btn {
+.page-nav-zone:hover .page-nav-btn,
+.is-dragging .page-nav-btn {
   opacity: 1;
 }
 

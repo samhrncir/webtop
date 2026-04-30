@@ -64,6 +64,7 @@ export default function HomeScreen({
   deleteItem,
   renameItem,
   reorderItems,
+  moveItem,
   addToFolder,
   removeFromFolder,
   ejectFromFolder,
@@ -81,6 +82,8 @@ export default function HomeScreen({
   const fileInputRef = useRef(null)
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
+  const dragStartPageId = useRef(null)
+  const pageNavTimerRef = useRef(null)
 
   const page = data.pages[currentPage]
   const items = page ? page.items : []
@@ -133,6 +136,43 @@ export default function HomeScreen({
     touchStartY.current = null
   }, [data.pages.length, setCurrentPage])
 
+  // Auto-scroll pages when dragging to the edge
+  useEffect(() => {
+    if (!activeDragId) return
+
+    const handlePointerMove = (e) => {
+      const vw = window.innerWidth
+      const edgeZone = 64
+
+      const inLeft = e.clientX < edgeZone && currentPage > 0
+      const inRight = e.clientX > vw - edgeZone && currentPage < data.pages.length - 1
+
+      if (inLeft || inRight) {
+        if (!pageNavTimerRef.current) {
+          pageNavTimerRef.current = setTimeout(() => {
+            pageNavTimerRef.current = null
+            if (inLeft) setCurrentPage((p) => Math.max(p - 1, 0))
+            else setCurrentPage((p) => Math.min(p + 1, data.pages.length - 1))
+          }, 700)
+        }
+      } else {
+        if (pageNavTimerRef.current) {
+          clearTimeout(pageNavTimerRef.current)
+          pageNavTimerRef.current = null
+        }
+      }
+    }
+
+    document.addEventListener('pointermove', handlePointerMove)
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove)
+      if (pageNavTimerRef.current) {
+        clearTimeout(pageNavTimerRef.current)
+        pageNavTimerRef.current = null
+      }
+    }
+  }, [activeDragId, currentPage, data.pages.length, setCurrentPage])
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
@@ -154,19 +194,35 @@ export default function HomeScreen({
 
   const handleDragStart = useCallback(({ active }) => {
     setActiveDragId(active.id)
-  }, [])
+    dragStartPageId.current = pageId
+  }, [pageId])
 
   const handleDragOver = useCallback(({ over }) => {
     setOverId(over ? over.id : null)
   }, [])
 
   const handleDragEnd = useCallback(({ active, over }) => {
+    if (pageNavTimerRef.current) {
+      clearTimeout(pageNavTimerRef.current)
+      pageNavTimerRef.current = null
+    }
+
+    const fromPageId = dragStartPageId.current
+    dragStartPageId.current = null
     setActiveDragId(null)
     setOverId(null)
+
+    // Cross-page drop: move the item to the current page
+    if (fromPageId && pageId && fromPageId !== pageId) {
+      const currentItems = page ? page.items : []
+      const overIdx = over ? currentItems.findIndex((i) => i.id === over.id) : -1
+      moveItem(active.id, fromPageId, pageId, overIdx === -1 ? currentItems.length : overIdx)
+      return
+    }
+
     if (!over || active.id === over.id) return
 
     const overItem = items.find((i) => i.id === over.id)
-    // If dropped onto a folder, add to folder
     if (overItem && overItem.type === 'folder') {
       const draggedItem = items.find((i) => i.id === active.id)
       if (draggedItem && draggedItem.type === 'bookmark') {
@@ -175,13 +231,12 @@ export default function HomeScreen({
       }
     }
 
-    // Otherwise reorder
     const oldIndex = items.findIndex((i) => i.id === active.id)
     const newIndex = items.findIndex((i) => i.id === over.id)
     if (oldIndex !== -1 && newIndex !== -1) {
       reorderItems(pageId, oldIndex, newIndex)
     }
-  }, [items, pageId, addToFolder, reorderItems])
+  }, [items, page, pageId, moveItem, addToFolder, reorderItems])
 
   const handleDeleteItem = useCallback((itemId) => {
     deleteItem(itemId, pageId)
@@ -276,7 +331,7 @@ export default function HomeScreen({
       />
 
       {/* Grid */}
-      <div className="homescreen-grid-area">
+      <div className={`homescreen-grid-area${activeDragId ? ' is-dragging' : ''}`}>
         {currentPage > 0 && (
           <div className="page-nav-zone page-nav-zone--left">
             <button
