@@ -218,6 +218,9 @@ export function useHomescreen() {
   }, [])
 
   const ejectFromFolder = useCallback((bookmarkId, folderId, pageId) => {
+    const sourceIdx = data.pages.findIndex((p) => p.id === pageId)
+    const targetIdx = data.pages.findIndex((page, idx) => idx >= sourceIdx && page.items.length < 20)
+
     setData((prev) => {
       let ejected = null
       const pagesAfterRemove = prev.pages.map((page) => {
@@ -233,16 +236,27 @@ export function useHomescreen() {
         }
       })
       if (!ejected) return prev
+
+      let pages = pagesAfterRemove
+      let resolvedIdx = targetIdx
+
+      if (resolvedIdx === -1) {
+        pages = [...pagesAfterRemove, { id: crypto.randomUUID(), items: [] }]
+        resolvedIdx = pages.length - 1
+      }
+
       return {
         ...prev,
-        pages: pagesAfterRemove.map((page) => {
-          if (page.id !== pageId) return page
-          if (page.items.length >= 20) return page
+        pages: pages.map((page, idx) => {
+          if (idx !== resolvedIdx) return page
           return { ...page, items: [...page.items, ejected] }
         }),
       }
     })
-  }, [])
+
+    const newPage = targetIdx !== -1 ? targetIdx : data.pages.length
+    if (newPage !== currentPage) setCurrentPage(newPage)
+  }, [currentPage, data.pages])
 
   const removeFromFolder = useCallback((bookmarkId, folderId, pageId) => {
     setData((prev) => {
