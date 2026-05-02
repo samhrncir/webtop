@@ -23,6 +23,7 @@ function HomescreenApp() {
     addFolder,
     deleteItem,
     renameItem,
+    updateBookmark,
     moveItem,
     addToFolder,
     removeFromFolder,
@@ -49,6 +50,7 @@ function HomescreenApp() {
             addFolder={addFolder}
             deleteItem={deleteItem}
             renameItem={renameItem}
+            updateBookmark={updateBookmark}
             reorderItems={reorderItems}
             moveItem={moveItem}
             addToFolder={addToFolder}
@@ -65,6 +67,8 @@ function HomescreenApp() {
             currentPage={currentPage}
             onNavigate={setCurrentPage}
             onAddPage={addPage}
+            onDeletePage={deletePage}
+            editMode={editMode}
           />
         </div>
 

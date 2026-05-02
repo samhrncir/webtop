@@ -22,6 +22,7 @@ import AppIcon from '../AppIcon/AppIcon.jsx'
 import FolderIcon from '../FolderIcon/FolderIcon.jsx'
 import FolderOverlay from '../FolderOverlay/FolderOverlay.jsx'
 import AddBookmarkModal from '../AddBookmarkModal/AddBookmarkModal.jsx'
+import AppInfoModal from '../AppInfoModal/AppInfoModal.jsx'
 import './HomeScreen.css'
 
 // Sortable wrapper for each grid item
@@ -63,6 +64,7 @@ export default function HomeScreen({
   addFolder,
   deleteItem,
   renameItem,
+  updateBookmark,
   reorderItems,
   moveItem,
   addToFolder,
@@ -78,6 +80,8 @@ export default function HomeScreen({
   const [activeFolder, setActiveFolder] = useState(null)
   const [activeDragId, setActiveDragId] = useState(null)
   const [overId, setOverId] = useState(null)
+  const [appInfoItem, setAppInfoItem] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   const fileInputRef = useRef(null)
   const touchStartX = useRef(null)
@@ -239,8 +243,26 @@ export default function HomeScreen({
   }, [items, page, pageId, moveItem, addToFolder, reorderItems])
 
   const handleDeleteItem = useCallback((itemId) => {
+    const item = items.find((i) => i.id === itemId)
+    if (item?.subUrls?.length > 0) {
+      setConfirmDelete({ itemId, name: item.name, count: item.subUrls.length })
+      return
+    }
     deleteItem(itemId, pageId)
-  }, [deleteItem, pageId])
+  }, [deleteItem, pageId, items])
+
+  const handleConfirmDelete = useCallback(() => {
+    if (confirmDelete) deleteItem(confirmDelete.itemId, pageId)
+    setConfirmDelete(null)
+  }, [confirmDelete, deleteItem, pageId])
+
+  const handleOpenAppInfo = useCallback((item) => {
+    setAppInfoItem(item)
+  }, [])
+
+  const handleSaveAppInfo = useCallback((updates) => {
+    if (appInfoItem) updateBookmark(appInfoItem.id, pageId, updates)
+  }, [appInfoItem, updateBookmark, pageId])
 
   const handleRenameItem = useCallback((itemId, newName) => {
     renameItem(itemId, pageId, newName)
@@ -382,7 +404,7 @@ export default function HomeScreen({
                         onDelete={handleDeleteItem}
                         onRename={handleRenameItem}
                         onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
-                        onLongPress={toggleEditMode}
+                        onInfoOpen={() => handleOpenAppInfo(item)}
                       />
                     ) : (
                       <FolderIcon
@@ -391,7 +413,6 @@ export default function HomeScreen({
                         onDelete={handleDeleteItem}
                         onRename={handleRenameItem}
                         onClick={handleOpenFolder}
-                        onLongPress={toggleEditMode}
                       />
                     )}
                   </SortableItem>
@@ -457,6 +478,30 @@ export default function HomeScreen({
           onEjectFromFolder={handleEjectFromFolder}
           onReorderFolderItems={handleReorderFolderItems}
         />
+      )}
+
+      {/* App info modal */}
+      {appInfoItem && (
+        <AppInfoModal
+          item={appInfoItem}
+          onClose={() => setAppInfoItem(null)}
+          onSave={handleSaveAppInfo}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div className="confirm-backdrop" onClick={() => setConfirmDelete(null)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="confirm-text">
+              <strong>{confirmDelete.name}</strong> has {confirmDelete.count} sub page{confirmDelete.count !== 1 ? 's' : ''} that will also be deleted.
+            </p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button className="confirm-delete" onClick={handleConfirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

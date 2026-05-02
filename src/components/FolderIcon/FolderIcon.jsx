@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import './FolderIcon.css'
 
@@ -25,31 +25,16 @@ function PreviewCell({ bookmark }) {
   )
 }
 
-export default function FolderIcon({ item, editMode, onDelete, onRename, onClick, onLongPress }) {
+export default function FolderIcon({ item, editMode, onDelete, onRename, onClick }) {
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(item.name)
-  const longPressTimer = useRef(null)
 
   const previewItems = item.items.slice(0, 4)
 
-  const handleMouseDown = useCallback(() => {
-    longPressTimer.current = setTimeout(() => {
-      if (onLongPress) onLongPress()
-    }, 500)
-  }, [onLongPress])
-
-  const clearLongPress = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
-  }, [])
-
   const handleClick = useCallback((e) => {
-    clearLongPress()
     if (editMode) return
     if (onClick) onClick(item)
-  }, [editMode, item, onClick, clearLongPress])
+  }, [editMode, item, onClick])
 
   const handleDeleteClick = useCallback((e) => {
     e.stopPropagation()
@@ -84,11 +69,6 @@ export default function FolderIcon({ item, editMode, onDelete, onRename, onClick
     <div
       className={`folder-icon${editMode ? ' edit-mode' : ''}`}
       onClick={handleClick}
-      onMouseDown={handleMouseDown}
-      onMouseUp={clearLongPress}
-      onMouseLeave={clearLongPress}
-      onTouchStart={handleMouseDown}
-      onTouchEnd={clearLongPress}
       title={item.name}
     >
       <div className="folder-icon-preview">

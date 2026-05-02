@@ -147,6 +147,21 @@ export function useHomescreen() {
     })
   }, [])
 
+  const updateBookmark = useCallback((itemId, pageId, updates) => {
+    setData((prev) => {
+      const pages = prev.pages.map((page) => {
+        if (page.id !== pageId) return page
+        return {
+          ...page,
+          items: page.items.map((item) =>
+            item.id === itemId ? { ...item, ...updates } : item
+          ),
+        }
+      })
+      return { ...prev, pages }
+    })
+  }, [])
+
   const moveItem = useCallback((itemId, fromPageId, toPageId, newIndex) => {
     setData((prev) => {
       let movingItem = null
@@ -329,6 +344,7 @@ export function useHomescreen() {
     addFolder,
     deleteItem,
     renameItem,
+    updateBookmark,
     moveItem,
     addToFolder,
     removeFromFolder,

@@ -1,35 +1,46 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { resolveSubUrl } from '../../utils/url.js'
 import './AppIcon.css'
 
-export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, onLongPress }) {
+export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, onInfoOpen }) {
   const [imgError, setImgError] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(item.name)
-  const longPressTimer = useRef(null)
+  const clickTimer = useRef(null)
 
   const faviconUrl = getFaviconUrl(item.url)
   const letter = getInitialLetter(item.name)
   const bgColor = getColorForName(item.name)
+  const hasSubUrls = item.subUrls?.length > 0
 
-  const handleMouseDown = useCallback(() => {
-    longPressTimer.current = setTimeout(() => {
-      if (onLongPress) onLongPress()
-    }, 500)
-  }, [onLongPress])
-
-  const clearLongPress = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
-    }
+  useEffect(() => {
+    return () => { if (clickTimer.current) clearTimeout(clickTimer.current) }
   }, [])
 
-  const handleClick = useCallback((e) => {
+  const handleClick = useCallback(() => {
     if (editMode) return
-    clearLongPress()
-    if (onOpen) onOpen(item.url)
-  }, [editMode, item.url, onOpen, clearLongPress])
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current)
+      clickTimer.current = null
+      return
+    }
+    clickTimer.current = setTimeout(() => {
+      clickTimer.current = null
+      const defaultSub = item.subUrls?.find((s) => s.isDefault)
+      const url = defaultSub ? resolveSubUrl(defaultSub.url, item.url) : item.url
+      if (onOpen) onOpen(url)
+    }, 220)
+  }, [editMode, item, onOpen])
+
+  const handleDoubleClick = useCallback(() => {
+    if (editMode) return
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current)
+      clickTimer.current = null
+    }
+    if (onInfoOpen) onInfoOpen()
+  }, [editMode, onInfoOpen])
 
   const handleDeleteClick = useCallback((e) => {
     e.stopPropagation()
@@ -64,11 +75,7 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
     <div
       className={`app-icon${editMode ? ' edit-mode' : ''}`}
       onClick={handleClick}
-      onMouseDown={handleMouseDown}
-      onMouseUp={clearLongPress}
-      onMouseLeave={clearLongPress}
-      onTouchStart={handleMouseDown}
-      onTouchEnd={clearLongPress}
+      onDoubleClick={handleDoubleClick}
       title={item.name}
     >
       <div className="app-icon-image-wrapper">
@@ -93,6 +100,13 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
           <div className="app-icon-letter" style={{ background: bgColor }}>
             {letter}
           </div>
+        )}
+        {hasSubUrls && !editMode && (
+          <button
+            className="app-icon-suburl-badge"
+            title="View sub pages"
+            onClick={(e) => { e.stopPropagation(); if (onInfoOpen) onInfoOpen() }}
+          >▾</button>
         )}
       </div>
 

@@ -57,3 +57,27 @@
   color: var(--text-primary);
   transform: scale(1.1);
 }
+
+.page-delete-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+  margin-left: 4px;
+}
+
+.page-delete-btn:hover {
+  background: rgba(255, 80, 80, 0.15);
+  border-color: rgba(255, 80, 80, 0.6);
+  color: rgb(255, 100, 100);
+  transform: scale(1.1);
+}
