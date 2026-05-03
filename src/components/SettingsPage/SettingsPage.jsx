@@ -1,3 +1,4 @@
+import { useRef, useCallback } from 'react'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { useSettings } from '../../context/SettingsContext.jsx'
 import { supabase } from '../../lib/supabase.js'
@@ -46,9 +47,25 @@ function Toggle({ value, onChange }) {
   )
 }
 
-export default function SettingsPage({ onBack }) {
+export default function SettingsPage({ onBack, importData, exportData }) {
   const { theme, toggleTheme } = useTheme()
   const { settings, setSetting } = useSettings()
+  const fileInputRef = useRef(null)
+
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileChange = useCallback(async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    try {
+      await importData(file)
+    } catch (err) {
+      alert('Import failed: ' + err.message)
+    }
+    e.target.value = ''
+  }, [importData])
 
   return (
     <div className="settings-page">
@@ -95,6 +112,30 @@ export default function SettingsPage({ onBack }) {
               />
             </SettingsRow>
           </div>
+        </section>
+
+        <section className="settings-section">
+          <h2 className="settings-section-title">Data</h2>
+          <div className="settings-card">
+            <SettingsRow label="Import" description="Restore bookmarks from a JSON backup">
+              <button className="settings-action-btn" onClick={handleImportClick}>
+                ⬆ Import
+              </button>
+            </SettingsRow>
+            <div className="settings-divider" />
+            <SettingsRow label="Export" description="Download a backup of all your bookmarks">
+              <button className="settings-action-btn" onClick={exportData}>
+                ⬇ Export
+              </button>
+            </SettingsRow>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden-file-input"
+            onChange={handleFileChange}
+          />
         </section>
 
         <section className="settings-section">

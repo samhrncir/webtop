@@ -23,7 +23,7 @@ function ResultIcon({ item }) {
   )
 }
 
-export default function SearchBar({ data, onNavigateToPage }) {
+export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
   const [query, setQuery] = useState('')
   const inputRef = useRef(null)
 
@@ -62,11 +62,12 @@ export default function SearchBar({ data, onNavigateToPage }) {
   }, [query, data])
 
   const handleResultClick = (result) => {
-    if (result.item.type === 'bookmark') {
+    if (result.item.type === 'folder') {
+      onNavigateToPage?.(result.pageIdx)
+      onOpenFolder?.(result.item, result.pageIdx)
+    } else {
       window.open(result.item.url, '_blank', 'noopener,noreferrer')
-    }
-    if (onNavigateToPage) {
-      onNavigateToPage(result.pageIdx)
+      onNavigateToPage?.(result.pageIdx)
     }
     setQuery('')
   }
