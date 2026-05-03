@@ -10,6 +10,7 @@ import './App.css'
 
 function HomescreenApp() {
   const [view, setView] = useState('home')
+  const [folderToOpen, setFolderToOpen] = useState(null)
 
   const {
     ejectFromFolder,
@@ -39,7 +40,11 @@ function HomescreenApp() {
       <div className={`app-view${view === 'settings' ? ' app-view--settings' : ''}`}>
 
         <div className="app-home">
-          <SearchBar data={data} onNavigateToPage={setCurrentPage} />
+          <SearchBar
+            data={data}
+            onNavigateToPage={setCurrentPage}
+            onOpenFolder={(folder, pageIdx) => { setCurrentPage(pageIdx); setFolderToOpen(folder) }}
+          />
           <HomeScreen
             data={data}
             currentPage={currentPage}
@@ -58,9 +63,9 @@ function HomescreenApp() {
             ejectFromFolder={ejectFromFolder}
             reorderFolderItems={reorderFolderItems}
             addPage={addPage}
-            importData={importData}
-            exportData={exportData}
             onOpenSettings={() => setView('settings')}
+            folderToOpen={folderToOpen}
+            clearFolderToOpen={() => setFolderToOpen(null)}
           />
           <PageIndicator
             pages={data.pages}
@@ -73,7 +78,7 @@ function HomescreenApp() {
         </div>
 
         <div className="app-settings">
-          <SettingsPage onBack={() => setView('home')} />
+          <SettingsPage onBack={() => setView('home')} importData={importData} exportData={exportData} />
         </div>
 
       </div>

@@ -130,37 +130,6 @@
 }
 
 /* Hidden file input */
-.hidden-file-input {
-  display: none;
-}
-
-/* Edit mode import/export bar */
-.edit-mode-bar {
-  position: absolute;
-  top: 8px;
-  left: 16px;
-  display: flex;
-  gap: 8px;
-  z-index: 30;
-}
-
-.edit-mode-bar-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 10px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  font-family: inherit;
-}
-
-.edit-mode-bar-btn:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-}
 
 /* Page nav edge zones */
 .page-nav-zone {

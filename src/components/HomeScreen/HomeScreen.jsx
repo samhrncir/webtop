@@ -72,9 +72,9 @@ export default function HomeScreen({
   ejectFromFolder,
   reorderFolderItems,
   addPage,
-  importData,
-  exportData,
   onOpenSettings,
+  folderToOpen,
+  clearFolderToOpen,
 }) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [activeFolder, setActiveFolder] = useState(null)
@@ -83,7 +83,7 @@ export default function HomeScreen({
   const [appInfoItem, setAppInfoItem] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  const fileInputRef = useRef(null)
+
   const touchStartX = useRef(null)
   const touchStartY = useRef(null)
   const dragStartPageId = useRef(null)
@@ -92,6 +92,14 @@ export default function HomeScreen({
   const page = data.pages[currentPage]
   const items = page ? page.items : []
   const pageId = page ? page.id : null
+
+  // Open folder triggered from search
+  useEffect(() => {
+    if (folderToOpen) {
+      setActiveFolder(folderToOpen)
+      clearFolderToOpen()
+    }
+  }, [folderToOpen, clearFolderToOpen])
 
   // Keep activeFolder in sync if folder data changes
   useEffect(() => {
@@ -292,20 +300,6 @@ export default function HomeScreen({
     renameItem(folderId, pageId, newName)
   }, [renameItem, pageId])
 
-  const handleImportClick = useCallback(() => {
-    fileInputRef.current?.click()
-  }, [])
-
-  const handleFileChange = useCallback(async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    try {
-      await importData(file)
-    } catch (err) {
-      alert('Import failed: ' + err.message)
-    }
-    e.target.value = ''
-  }, [importData])
 
   const activeDragItem = activeDragId ? items.find((i) => i.id === activeDragId) : null
 
@@ -319,42 +313,23 @@ export default function HomeScreen({
       <div className="homescreen-toolbar">
         <Clock />
         <div className="homescreen-toolbar-actions">
-        <button
-          className="homescreen-toolbar-btn"
-          onClick={onOpenSettings}
-          title="Settings"
-        >
-          ⚙️
-        </button>
-        <button
-          className={`homescreen-toolbar-btn${editMode ? ' edit-active' : ''}`}
-          onClick={toggleEditMode}
-          title={editMode ? 'Done editing' : 'Edit mode'}
-        >
-          {editMode ? '✓ Done' : '✏️ Edit'}
-        </button>
+          <button
+            className="homescreen-toolbar-btn"
+            onClick={onOpenSettings}
+            title="Settings"
+          >
+            ⚙️
+          </button>
+          <button
+            className={`homescreen-toolbar-btn${editMode ? ' edit-active' : ''}`}
+            onClick={toggleEditMode}
+            title={editMode ? 'Done editing' : 'Edit mode'}
+          >
+            {editMode ? '✓ Done' : '✏️ Edit'}
+          </button>
         </div>
       </div>
 
-      {/* Edit mode bar (import/export) */}
-      {editMode && (
-        <div className="edit-mode-bar">
-          <button className="edit-mode-bar-btn" onClick={handleImportClick} title="Import bookmarks">
-            ⬆ Import
-          </button>
-          <button className="edit-mode-bar-btn" onClick={exportData} title="Export bookmarks">
-            ⬇ Export
-          </button>
-        </div>
-      )}
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,application/json"
-        className="hidden-file-input"
-        onChange={handleFileChange}
-      />
 
       {/* Grid */}
       <div className={`homescreen-grid-area${activeDragId ? ' is-dragging' : ''}`}>
