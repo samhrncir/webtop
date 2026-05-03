@@ -36,7 +36,7 @@ export default function AuthScreen() {
   return (
     <div className="auth-screen">
       <div className="auth-card">
-        <h1 className="auth-title">Webtop</h1>
+        <h1 className="auth-title">BrowserHome</h1>
 
         <div className="auth-tabs">
           <button

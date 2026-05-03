@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase.js'
 
-const STORAGE_KEY = 'webtop_data'
-const PENDING_SYNC_KEY = 'webtop_pending_sync'
+const STORAGE_KEY = 'browserhome_data'
+const PENDING_SYNC_KEY = 'browserhome_pending_sync'
 
 function createDefaultData() {
   return {

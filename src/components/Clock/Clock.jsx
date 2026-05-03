@@ -22,6 +22,7 @@ export default function Clock() {
 
   return (
     <div className="clock">
+      <img src="/globe.svg" className="clock-globe" aria-hidden="true" />
       {hours}<span className="clock-colon">:</span>{minutes}
       {suffix && <span className="clock-suffix">{suffix}</span>}
     </div>
