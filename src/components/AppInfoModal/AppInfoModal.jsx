@@ -18,14 +18,14 @@ import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/fa
 import { resolveSubUrl } from '../../utils/url.js'
 import './AppInfoModal.css'
 
-function SortableSubUrl({ sub, baseUrl, listEditMode, onSetDefault, onDelete }) {
+function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sub.id })
   const style = { transform: CSS.Transform.toString(transform), transition }
   const resolvedUrl = resolveSubUrl(sub.url, baseUrl)
 
   return (
     <div ref={setNodeRef} style={style} className={`app-info-suburl-row${isDragging ? ' is-dragging' : ''}`}>
-      {listEditMode && (
+      {editMode && (
         <span className="app-info-suburl-drag" {...attributes} {...listeners}>⠿</span>
       )}
       <input
@@ -47,8 +47,12 @@ function SortableSubUrl({ sub, baseUrl, listEditMode, onSetDefault, onDelete }) 
         <span className="app-info-suburl-name">{sub.name}</span>
         <span className="app-info-suburl-url">{sub.url}</span>
       </a>
-      {listEditMode && (
-        <button className="app-info-suburl-delete" onClick={() => onDelete(sub.id)} aria-label="Delete sub page">
+      {editMode && (
+        <button
+          className="app-info-suburl-delete"
+          onClick={() => { if (window.confirm(`Delete "${sub.name}"?`)) onDelete(sub.id) }}
+          aria-label="Delete sub page"
+        >
           &times;
         </button>
       )}
@@ -56,11 +60,11 @@ function SortableSubUrl({ sub, baseUrl, listEditMode, onSetDefault, onDelete }) 
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
-  const [listEditMode, setListEditMode] = useState(false)
+  const [editMode, setEditMode] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newSubName, setNewSubName] = useState('')
   const [newSubUrl, setNewSubUrl] = useState('')
@@ -80,6 +84,35 @@ export default function AppInfoModal({ item, onClose, onSave }) {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   )
+
+  const handleEdit = useCallback(() => setEditMode(true), [])
+
+  const handleCancel = useCallback(() => {
+    setName(item.name)
+    setUrl(item.url)
+    setSubUrls(item.subUrls || [])
+    setEditMode(false)
+    setShowAddForm(false)
+    setNewSubName('')
+    setNewSubUrl('')
+  }, [item])
+
+  const handleSave = useCallback(() => {
+    onSave({
+      name: name.trim() || item.name,
+      url: url.trim() || item.url,
+      subUrls,
+    })
+    setEditMode(false)
+    onClose()
+  }, [name, url, subUrls, item, onSave, onClose])
+
+  const handleDelete = useCallback(() => {
+    if (window.confirm(`Delete "${item.name}"?`)) {
+      onDelete()
+      onClose()
+    }
+  }, [item.name, onDelete, onClose])
 
   const handleSetDefault = useCallback((subId) => {
     setSubUrls((prev) => prev.map((s) => ({ ...s, isDefault: subId !== null && s.id === subId })))
@@ -117,15 +150,6 @@ export default function AppInfoModal({ item, onClose, onSave }) {
     setShowAddForm(false)
   }, [])
 
-  const handleSave = useCallback(() => {
-    onSave({
-      name: name.trim() || item.name,
-      url: url.trim() || item.url,
-      subUrls,
-    })
-    onClose()
-  }, [name, url, subUrls, item, onSave, onClose])
-
   const handleBackdropClick = useCallback((e) => {
     if (e.target === e.currentTarget) onClose()
   }, [onClose])
@@ -135,7 +159,12 @@ export default function AppInfoModal({ item, onClose, onSave }) {
       <div className="app-info-modal">
         <div className="app-info-header">
           <span className="app-info-title">App Info</span>
-          <button className="app-info-close" onClick={onClose} aria-label="Close">&times;</button>
+          <div className="app-info-header-actions">
+            {!editMode && (
+              <button className="app-info-edit-btn" onClick={handleEdit}>Edit</button>
+            )}
+            <button className="app-info-close" onClick={onClose} aria-label="Close">&times;</button>
+          </div>
         </div>
 
         <div className="app-info-identity">
@@ -153,36 +182,45 @@ export default function AppInfoModal({ item, onClose, onSave }) {
             )}
           </div>
           <div className="app-info-fields">
-            <input
-              className="app-info-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="App name"
-              autoComplete="off"
-            />
-            <input
-              className="app-info-input app-info-input--url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
-              autoComplete="off"
-              spellCheck={false}
-            />
+            {editMode ? (
+              <>
+                <input
+                  className="app-info-input"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="App name"
+                  autoComplete="off"
+                />
+                <input
+                  className="app-info-input app-info-input--url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </>
+            ) : (
+              <>
+                <span className="app-info-display-name">{name}</span>
+                <a
+                  className="app-info-display-url"
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={url}
+                >
+                  {url}
+                </a>
+              </>
+            )}
           </div>
         </div>
 
         <div className="app-info-suburl-section">
           <div className="app-info-suburl-header">
             <span className="app-info-suburl-title">Sub Pages</span>
-            <div className="app-info-suburl-header-actions">
-              {subUrls.length > 0 && (
-                <button
-                  className={`app-info-list-edit-btn${listEditMode ? ' active' : ''}`}
-                  onClick={() => setListEditMode((v) => !v)}
-                >
-                  {listEditMode ? 'Done' : 'Edit'}
-                </button>
-              )}
+            {editMode && (
               <button
                 className="app-info-suburl-add-btn"
                 onClick={() => setShowAddForm((v) => !v)}
@@ -190,7 +228,7 @@ export default function AppInfoModal({ item, onClose, onSave }) {
               >
                 +
               </button>
-            </div>
+            )}
           </div>
 
           {subUrls.length > 0 ? (
@@ -202,7 +240,7 @@ export default function AppInfoModal({ item, onClose, onSave }) {
                       key={sub.id}
                       sub={sub}
                       baseUrl={url}
-                      listEditMode={listEditMode}
+                      editMode={editMode}
                       onSetDefault={handleSetDefault}
                       onDelete={handleDeleteSub}
                     />
@@ -211,10 +249,14 @@ export default function AppInfoModal({ item, onClose, onSave }) {
               </SortableContext>
             </DndContext>
           ) : (
-            !showAddForm && <p className="app-info-suburl-empty">No sub pages yet. Use + to add one.</p>
+            !showAddForm && (
+              <p className="app-info-suburl-empty">
+                {editMode ? 'No sub pages yet. Use + to add one.' : 'No sub pages.'}
+              </p>
+            )
           )}
 
-          {showAddForm && (
+          {editMode && showAddForm && (
             <div className="app-info-add-form">
               <input
                 className="app-info-input"
@@ -242,9 +284,15 @@ export default function AppInfoModal({ item, onClose, onSave }) {
           )}
         </div>
 
-        <div className="app-info-footer">
-          <button className="app-info-save-btn" onClick={handleSave}>Save</button>
-        </div>
+        {editMode && (
+          <div className="app-info-footer">
+            <button className="app-info-delete-btn" onClick={handleDelete}>Delete</button>
+            <div className="app-info-footer-actions">
+              <button className="app-info-cancel-btn" onClick={handleCancel}>Cancel</button>
+              <button className="app-info-save-btn" onClick={handleSave}>Save</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

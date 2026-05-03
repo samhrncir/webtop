@@ -264,6 +264,10 @@ export default function HomeScreen({
     if (appInfoItem) updateBookmark(appInfoItem.id, pageId, updates)
   }, [appInfoItem, updateBookmark, pageId])
 
+  const handleDeleteAppInfo = useCallback(() => {
+    if (appInfoItem) deleteItem(appInfoItem.id, pageId)
+  }, [appInfoItem, deleteItem, pageId])
+
   const handleRenameItem = useCallback((itemId, newName) => {
     renameItem(itemId, pageId, newName)
   }, [renameItem, pageId])
@@ -486,6 +490,7 @@ export default function HomeScreen({
           item={appInfoItem}
           onClose={() => setAppInfoItem(null)}
           onSave={handleSaveAppInfo}
+          onDelete={handleDeleteAppInfo}
         />
       )}
 

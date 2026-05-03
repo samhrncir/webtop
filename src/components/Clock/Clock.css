@@ -1,10 +1,19 @@
 .clock {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+}
+
+.clock-globe {
+  width: 13px;
+  height: 13px;
+  opacity: 0.5;
 }
 
 .clock-colon {

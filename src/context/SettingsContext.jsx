@@ -8,7 +8,7 @@ const DEFAULTS = {
 
 function load() {
   try {
-    const raw = localStorage.getItem('webtop_settings')
+    const raw = localStorage.getItem('browserhome_settings')
     return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : DEFAULTS
   } catch {
     return DEFAULTS
@@ -19,7 +19,7 @@ export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(load)
 
   useEffect(() => {
-    localStorage.setItem('webtop_settings', JSON.stringify(settings))
+    localStorage.setItem('browserhome_settings', JSON.stringify(settings))
   }, [settings])
 
   const setSetting = (key, value) =>
