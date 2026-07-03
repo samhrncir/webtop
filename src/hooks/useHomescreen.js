@@ -113,6 +113,9 @@ export function useHomescreen() {
   // rows can never race ahead of the server state
   const hydratedRef = useRef(false)
   const pushTimerRef = useRef(null)
+  // Set on unmount (sign-out) so an in-flight pull/push can't write rows
+  // back into localStorage after clearLocalData() has wiped it
+  const releasedRef = useRef(false)
 
   const data = useMemo(() => rowsToNested(rows), [rows])
 
@@ -135,6 +138,7 @@ export function useHomescreen() {
     const sentAt = new Map([...pageRows, ...itemRows].map((r) => [r.id, r.updated_at]))
     const result = await pushRows(pageRows, itemRows)
     if (result.status !== 'ok') return // stay dirty; retried on next edit / 'online'
+    if (releasedRef.current) return // signed out mid-push; storage is already cleared
 
     // Clear dirty marks, except rows re-edited while the push was in flight
     const unchanged = (id) => {
@@ -172,6 +176,7 @@ export function useHomescreen() {
   }, [schedulePush])
 
   const adoptMerged = useCallback((merged) => {
+    if (releasedRef.current) return // signed out mid-pull; storage is already cleared
     const next = ensureLivePage(merged)
     rowsRef.current = next
     saveRows(next, dirtyRef.current)
@@ -213,10 +218,12 @@ export function useHomescreen() {
   }, [adoptMerged, flushPush])
 
   useEffect(() => {
+    releasedRef.current = false // reset for StrictMode's dev remount
     reconcile()
     const handleOnline = () => reconcile()
     window.addEventListener('online', handleOnline)
     return () => {
+      releasedRef.current = true
       window.removeEventListener('online', handleOnline)
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current)
     }

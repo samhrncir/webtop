@@ -16,6 +16,11 @@ import { positionBetween, seqPositions } from './fractional.js'
 
 const ROWS_KEY = 'browserhome_rows'
 const DIRTY_KEY = 'browserhome_dirty'
+const OWNER_KEY = 'browserhome_user'
+// Keys from the legacy blob sync (storage.js), still cleared on sign-out so
+// no trace of a previous account's data survives
+const LEGACY_DATA_KEY = 'browserhome_data'
+const LEGACY_PENDING_KEY = 'browserhome_pending_sync'
 
 export function nowIso() {
   return new Date().toISOString()
@@ -34,6 +39,27 @@ export function byPosition(a, b) {
 }
 
 // ---------- local persistence ----------
+
+// Remove every locally stored trace of homescreen data. Theme and settings
+// are device preferences, not account data, so they survive sign-out.
+export function clearLocalData() {
+  for (const key of [ROWS_KEY, DIRTY_KEY, OWNER_KEY, LEGACY_DATA_KEY, LEGACY_PENDING_KEY]) {
+    localStorage.removeItem(key)
+  }
+}
+
+// Tag the local snapshot with the signed-in user. A snapshot left behind by
+// a different account is discarded here, so it can never be treated as this
+// account's dirty state and merged/pushed into it.
+export function claimLocalData(userId) {
+  try {
+    const owner = localStorage.getItem(OWNER_KEY)
+    if (owner && owner !== userId) clearLocalData()
+    localStorage.setItem(OWNER_KEY, userId)
+  } catch (err) {
+    console.error('Failed to claim local data:', err)
+  }
+}
 
 export function loadRows() {
   try {
