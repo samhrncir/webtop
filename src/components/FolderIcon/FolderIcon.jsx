@@ -41,7 +41,7 @@ export default function FolderIcon({ item, editMode, onDelete, onRename, onClick
     if (onDelete) onDelete(item.id)
   }, [item.id, onDelete])
 
-  const handleLabelDoubleClick = useCallback((e) => {
+  const handleLabelClick = useCallback((e) => {
     if (!editMode) return
     e.stopPropagation()
     setRenameValue(item.name)
@@ -101,7 +101,7 @@ export default function FolderIcon({ item, editMode, onDelete, onRename, onClick
       ) : (
         <span
           className="folder-icon-label"
-          onDoubleClick={handleLabelDoubleClick}
+          onClick={handleLabelClick}
         >
           {item.name}
         </span>

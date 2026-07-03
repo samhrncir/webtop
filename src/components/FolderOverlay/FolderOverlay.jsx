@@ -178,8 +178,8 @@ export default function FolderOverlay({
             ) : (
               <h2
                 className="folder-overlay-title"
-                onDoubleClick={() => editMode && setRenamingFolder(true)}
-                title={editMode ? 'Double-click to rename' : folder.name}
+                onClick={() => editMode && setRenamingFolder(true)}
+                title={editMode ? 'Tap to rename' : folder.name}
               >
                 {folder.name}
               </h2>

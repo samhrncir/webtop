@@ -47,12 +47,17 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
     if (onDelete) onDelete(item.id)
   }, [item.id, onDelete])
 
-  const handleLabelDoubleClick = useCallback((e) => {
+  const handleLabelClick = useCallback((e) => {
     if (!editMode) return
     e.stopPropagation()
     setRenameValue(item.name)
     setRenaming(true)
   }, [editMode, item.name])
+
+  const handleInfoClick = useCallback((e) => {
+    e.stopPropagation()
+    if (onInfoOpen) onInfoOpen()
+  }, [onInfoOpen])
 
   const handleRenameKeyDown = useCallback((e) => {
     if (e.key === 'Enter') {
@@ -86,6 +91,16 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
             aria-label={`Delete ${item.name}`}
           >
             &times;
+          </button>
+        )}
+        {editMode && onInfoOpen && (
+          <button
+            className="app-icon-info"
+            onClick={handleInfoClick}
+            aria-label={`Edit ${item.name}`}
+            title="Edit bookmark"
+          >
+            i
           </button>
         )}
         {!imgError && faviconUrl ? (
@@ -123,7 +138,7 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
       ) : (
         <span
           className="app-icon-label"
-          onDoubleClick={handleLabelDoubleClick}
+          onClick={handleLabelClick}
         >
           {item.name}
         </span>
