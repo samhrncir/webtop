@@ -1,134 +1,244 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { supabase } from '../lib/supabase.js'
 import {
-  loadData, saveData, mergeData,
-  fetchFromServer, syncToServer,
-  hasPendingSync, setPendingSync, clearPendingSync,
-  exportData as exportDataUtil, importData as importDataUtil,
+  loadData,
+  fetchFromServer as fetchLegacyBlob,
+  exportData as exportDataUtil,
+  importData as importDataUtil,
 } from '../utils/storage.js'
+import {
+  nowIso, byPosition,
+  loadRows, loadDirty, saveRows,
+  rowsToNested, nestedToRows,
+  mergeRows, pruneTombstones, ensureLivePage,
+  pullRows, pushRows, subscribeToChanges,
+} from '../utils/syncV2.js'
+import { positionBetween } from '../utils/fractional.js'
+
+// ---------- row query helpers ----------
+
+function livePages(rows) {
+  return rows.pages.filter((p) => !p.deleted_at).sort(byPosition)
+}
+
+function liveTopItems(rows, pageId) {
+  return rows.items
+    .filter((i) => !i.deleted_at && i.page_id === pageId && !i.folder_id)
+    .sort(byPosition)
+}
+
+function liveFolderItems(rows, folderId) {
+  return rows.items
+    .filter((i) => !i.deleted_at && i.folder_id === folderId)
+    .sort(byPosition)
+}
+
+function liveItem(rows, itemId) {
+  return rows.items.find((i) => i.id === itemId && !i.deleted_at)
+}
+
+// Position after the last entry of a sorted list
+function endPosition(list) {
+  const last = list[list.length - 1]
+  return positionBetween(last ? last.position : '', '')
+}
+
+// Position for inserting at `index` into a sorted list (dnd semantics:
+// the moved item is excluded, then inserted at the target index)
+function positionAt(list, index, excludeId) {
+  const filtered = excludeId ? list.filter((i) => i.id !== excludeId) : list
+  const clamped = Math.max(0, Math.min(index, filtered.length))
+  const prev = clamped > 0 ? filtered[clamped - 1].position : ''
+  const next = clamped < filtered.length ? filtered[clamped].position : ''
+  try {
+    return positionBetween(prev, next)
+  } catch {
+    // Neighbors with identical keys (concurrent same-slot inserts) — fall
+    // back to appending; the id tie-break keeps ordering deterministic
+    return positionBetween(prev, '')
+  }
+}
+
+// Apply full-row snapshots onto the row set (replace by id, append new)
+function applyChangesToRows(rows, changes) {
+  const applyTable = (arr, changed) => {
+    if (!changed || changed.length === 0) return arr
+    const result = [...arr]
+    const indexById = new Map(result.map((r, idx) => [r.id, idx]))
+    for (const row of changed) {
+      const idx = indexById.get(row.id)
+      if (idx === undefined) {
+        indexById.set(row.id, result.length)
+        result.push(row)
+      } else {
+        result[idx] = row
+      }
+    }
+    return result
+  }
+  return {
+    pages: applyTable(rows.pages, changes.pages),
+    items: applyTable(rows.items, changes.items),
+  }
+}
+
+// First run on this device: use stored rows, else convert the legacy
+// local blob. Converted content is marked dirty so it seeds the server;
+// an untouched default (one empty page) is not worth pushing.
+function bootstrapLocal() {
+  const stored = loadRows()
+  if (stored) return { rows: ensureLivePage(stored), dirty: loadDirty() }
+
+  const legacy = loadData()
+  const rows = nestedToRows(legacy)
+  const hasContent = legacy.pages.length > 1 || legacy.pages.some((p) => p.items.length > 0)
+  const dirty = hasContent
+    ? { pages: new Set(rows.pages.map((p) => p.id)), items: new Set(rows.items.map((i) => i.id)) }
+    : { pages: new Set(), items: new Set() }
+  saveRows(rows, dirty)
+  return { rows, dirty }
+}
 
 export function useHomescreen() {
-  const [data, setData] = useState(() => loadData())
+  const bootRef = useRef(null)
+  if (bootRef.current === null) bootRef.current = bootstrapLocal()
+
+  const [rows, setRows] = useState(bootRef.current.rows)
   const [currentPage, setCurrentPage] = useState(0)
   const [editMode, setEditMode] = useState(false)
-  const syncTimerRef = useRef(null)
-  // JSON of the last state confirmed written to the server
-  const lastSyncedRef = useRef(null)
-  // Version token (updated_at) of the server row we last saw — conditional
-  // writes use this so a stale session can't silently overwrite a newer copy
-  const serverUpdatedAtRef = useRef(null)
-  // Pushes are blocked until the initial server reconcile has succeeded, so
-  // stale/empty local data can never race past the fetch and clobber the server
+
+  const rowsRef = useRef(rows)
+  const dirtyRef = useRef(bootRef.current.dirty)
+  // Pushes stay blocked until the first successful pull, so stale local
+  // rows can never race ahead of the server state
   const hydratedRef = useRef(false)
-  const dataRef = useRef(data)
-  // Snapshot of what was loaded from localStorage, to tell "user edited
-  // something" apart from "initial render" when marking the dirty flag
-  const initialSerializedRef = useRef(null)
-  if (initialSerializedRef.current === null) {
-    initialSerializedRef.current = JSON.stringify(data)
-  }
+  const pushTimerRef = useRef(null)
 
-  const pushToServer = useCallback(async (payload) => {
-    const serialized = JSON.stringify(payload)
-    const result = await syncToServer(payload, serverUpdatedAtRef.current)
-    if (result.status === 'ok') {
-      serverUpdatedAtRef.current = result.updatedAt
-      lastSyncedRef.current = serialized
-      clearPendingSync()
-    } else if (result.status === 'conflict') {
-      // Another session wrote first — pull its copy, merge ours in, and let
-      // the data effect re-push the merged result with the fresh version token
-      const server = await fetchFromServer()
-      if (server.status === 'ok') {
-        serverUpdatedAtRef.current = server.updatedAt
-        const merged = mergeData(dataRef.current, server.data)
-        const mergedSerialized = JSON.stringify(merged)
-        if (mergedSerialized === JSON.stringify(server.data)) {
-          // Nothing local to contribute — adopt server copy as synced
-          lastSyncedRef.current = mergedSerialized
-          clearPendingSync()
-        }
-        setData(merged)
-      }
+  const data = useMemo(() => rowsToNested(rows), [rows])
+
+  // ---------- sync plumbing ----------
+
+  const flushPush = useCallback(async () => {
+    if (!hydratedRef.current) return
+    const dirty = dirtyRef.current
+    if (dirty.pages.size === 0 && dirty.items.size === 0) return
+
+    const snapshot = rowsRef.current
+    const itemRows = snapshot.items.filter((i) => dirty.items.has(i.id))
+    // Also send pages the dirty items sit on, so a new item never lands
+    // before its page exists server-side (LWW makes re-sends no-ops)
+    const referencedPageIds = new Set(itemRows.map((i) => i.page_id))
+    const pageRows = snapshot.pages.filter(
+      (p) => dirty.pages.has(p.id) || referencedPageIds.has(p.id)
+    )
+
+    const sentAt = new Map([...pageRows, ...itemRows].map((r) => [r.id, r.updated_at]))
+    const result = await pushRows(pageRows, itemRows)
+    if (result.status !== 'ok') return // stay dirty; retried on next edit / 'online'
+
+    // Clear dirty marks, except rows re-edited while the push was in flight
+    const unchanged = (id) => {
+      const row = rowsRef.current.pages.find((p) => p.id === id)
+        || rowsRef.current.items.find((i) => i.id === id)
+      return !row || row.updated_at === sentAt.get(id)
     }
-    // 'error' (offline etc.): dirty flag stays set; retried on 'online' or next edit
+    for (const id of [...dirtyRef.current.pages]) {
+      if (sentAt.has(id) && unchanged(id)) dirtyRef.current.pages.delete(id)
+    }
+    for (const id of [...dirtyRef.current.items]) {
+      if (sentAt.has(id) && unchanged(id)) dirtyRef.current.items.delete(id)
+    }
+    const pruned = pruneTombstones(rowsRef.current, dirtyRef.current)
+    rowsRef.current = pruned
+    saveRows(pruned, dirtyRef.current)
+    setRows(pruned)
   }, [])
 
-  // Reconcile local state with the server: adopt the server copy when local is
-  // clean, merge when local has unsynced edits (dirty flag), push local up when
-  // the server has nothing. Runs on mount and when connectivity returns.
-  const reconcile = useCallback(async (attempt = 0) => {
-    const server = await fetchFromServer()
-    if (server.status === 'error') return // unreachable — stay unhydrated, retry on 'online'
+  const schedulePush = useCallback(() => {
+    if (pushTimerRef.current) clearTimeout(pushTimerRef.current)
+    pushTimerRef.current = setTimeout(flushPush, 800)
+  }, [flushPush])
 
-    if (server.status === 'empty' || server.status === 'invalid') {
-      // No usable server copy — push local up
-      if (server.status === 'invalid') serverUpdatedAtRef.current = server.updatedAt
-      const local = dataRef.current
-      const result = await syncToServer(local, serverUpdatedAtRef.current)
-      if (result.status === 'ok') {
-        serverUpdatedAtRef.current = result.updatedAt
-        lastSyncedRef.current = JSON.stringify(local)
-        clearPendingSync()
-        hydratedRef.current = true
-      } else if (result.status === 'conflict' && attempt < 2) {
-        // A row appeared concurrently — re-run against it
-        return reconcile(attempt + 1)
-      }
-      return
-    }
+  // Every mutation funnels through here: stamp rows into local state,
+  // persist, mark dirty, debounce a push
+  const applyRowChanges = useCallback((changes) => {
+    const next = applyChangesToRows(rowsRef.current, changes)
+    for (const p of changes.pages || []) dirtyRef.current.pages.add(p.id)
+    for (const i of changes.items || []) dirtyRef.current.items.add(i.id)
+    rowsRef.current = next
+    saveRows(next, dirtyRef.current)
+    setRows(next)
+    schedulePush()
+  }, [schedulePush])
 
-    // Guard against adopting a stale fetch that raced with an in-flight push
-    if (
-      hydratedRef.current &&
-      serverUpdatedAtRef.current &&
-      server.updatedAt <= serverUpdatedAtRef.current
-    ) return
-
-    serverUpdatedAtRef.current = server.updatedAt
-    if (hasPendingSync()) {
-      // Local has edits the server never saw — merge instead of letting the
-      // server copy overwrite them
-      const merged = mergeData(dataRef.current, server.data)
-      const mergedSerialized = JSON.stringify(merged)
-      if (mergedSerialized === JSON.stringify(server.data)) {
-        lastSyncedRef.current = mergedSerialized
-        clearPendingSync()
-      }
-      hydratedRef.current = true
-      setData(merged) // if still dirty, the data effect pushes the merge up
-    } else {
-      lastSyncedRef.current = JSON.stringify(server.data)
-      hydratedRef.current = true
-      setData(server.data)
-    }
+  const adoptMerged = useCallback((merged) => {
+    const next = ensureLivePage(merged)
+    rowsRef.current = next
+    saveRows(next, dirtyRef.current)
+    setRows(next)
   }, [])
 
-  // Save to localStorage and debounce sync to server on every data change
-  useEffect(() => {
-    dataRef.current = data
-    saveData(data)
+  // Full pull + LWW merge + push of anything still dirty. Runs on mount
+  // and whenever connectivity returns.
+  const reconcile = useCallback(async () => {
+    const pulled = await pullRows()
+    if (pulled.status !== 'ok') return // unreachable — stay unhydrated, retry on 'online'
 
-    const serialized = JSON.stringify(data)
-    if (serialized === lastSyncedRef.current) return
-    // Mark dirty so edits survive a close/reload even if the push never fires
-    if (serialized !== initialSerializedRef.current) setPendingSync()
-    if (!hydratedRef.current) return // initial reconcile hasn't completed yet
-
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
-    syncTimerRef.current = setTimeout(() => pushToServer(dataRef.current), 800)
-
-    return () => {
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
+    // First run against the v2 tables (never any rows, even tombstones):
+    // seed from the legacy server blob
+    if (pulled.rows.pages.length === 0 && pulled.rows.items.length === 0) {
+      const legacy = await fetchLegacyBlob()
+      if (legacy.status === 'error') return
+      if (
+        legacy.status === 'ok' &&
+        (legacy.data.pages.length > 1 || legacy.data.pages.some((p) => p.items.length > 0))
+      ) {
+        const legacyRows = nestedToRows(legacy.data)
+        for (const p of legacyRows.pages) dirtyRef.current.pages.add(p.id)
+        for (const i of legacyRows.items) dirtyRef.current.items.add(i.id)
+        rowsRef.current = mergeRows(rowsRef.current, legacyRows, {
+          dropOrphanEmptyPages: true, // sheds the untouched bootstrap placeholder page
+          dirtyPages: dirtyRef.current.pages,
+        })
+      }
     }
-  }, [data, pushToServer])
 
-  // On mount: reconcile with the server; re-reconcile when connectivity returns
+    const merged = mergeRows(rowsRef.current, pulled.rows, {
+      dropOrphanEmptyPages: true,
+      dirtyPages: dirtyRef.current.pages,
+    })
+    hydratedRef.current = true
+    adoptMerged(merged)
+    flushPush()
+  }, [adoptMerged, flushPush])
+
   useEffect(() => {
     reconcile()
     const handleOnline = () => reconcile()
     window.addEventListener('online', handleOnline)
-    return () => window.removeEventListener('online', handleOnline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      if (pushTimerRef.current) clearTimeout(pushTimerRef.current)
+    }
   }, [reconcile])
+
+  // Live updates from other sessions; the LWW merge means our own echoed
+  // writes and anything older than local dirty edits are ignored
+  useEffect(() => {
+    let cancelled = false
+    let cleanup = null
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || !session?.user) return
+      cleanup = subscribeToChanges(session.user.id, (table, row) => {
+        const patch = table === 'pages' ? { pages: [row], items: [] } : { pages: [], items: [row] }
+        adoptMerged(mergeRows(rowsRef.current, patch))
+      })
+    })
+    return () => {
+      cancelled = true
+      if (cleanup) cleanup()
+    }
+  }, [adoptMerged])
 
   // Clamp currentPage if pages are removed
   useEffect(() => {
@@ -137,239 +247,232 @@ export function useHomescreen() {
     }
   }, [data.pages.length, currentPage])
 
+  // ---------- mutations (public API unchanged) ----------
+
   const toggleEditMode = useCallback(() => {
     setEditMode((prev) => !prev)
   }, [])
 
   const addBookmark = useCallback((url, name) => {
-    setData((prev) => ({
-      ...prev,
-      pages: prev.pages.map((page, idx) => {
-        if (idx !== currentPage) return page
-        return { ...page, items: [...page.items, { id: crypto.randomUUID(), type: 'bookmark', name, url }] }
-      }),
-    }))
-  }, [currentPage])
+    const page = livePages(rowsRef.current)[currentPage]
+    if (!page) return
+    applyRowChanges({
+      items: [{
+        id: crypto.randomUUID(), page_id: page.id, folder_id: null, type: 'bookmark',
+        content: { name, url },
+        position: endPosition(liveTopItems(rowsRef.current, page.id)),
+        deleted_at: null, updated_at: nowIso(),
+      }],
+    })
+  }, [currentPage, applyRowChanges])
 
   const addFolder = useCallback((name) => {
-    setData((prev) => ({
-      ...prev,
-      pages: prev.pages.map((page, idx) => {
-        if (idx !== currentPage) return page
-        return { ...page, items: [...page.items, { id: crypto.randomUUID(), type: 'folder', name, items: [] }] }
-      }),
-    }))
-  }, [currentPage])
-
-  const deleteItem = useCallback((itemId, pageId) => {
-    setData((prev) => {
-      const pages = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        return { ...page, items: page.items.filter((item) => item.id !== itemId) }
-      })
-      return { ...prev, pages }
+    const page = livePages(rowsRef.current)[currentPage]
+    if (!page) return
+    applyRowChanges({
+      items: [{
+        id: crypto.randomUUID(), page_id: page.id, folder_id: null, type: 'folder',
+        content: { name },
+        position: endPosition(liveTopItems(rowsRef.current, page.id)),
+        deleted_at: null, updated_at: nowIso(),
+      }],
     })
-  }, [])
+  }, [currentPage, applyRowChanges])
+
+  const deleteItem = useCallback((itemId) => {
+    const rowsNow = rowsRef.current
+    const target = liveItem(rowsNow, itemId)
+    if (!target) return
+    const now = nowIso()
+    const changes = [{ ...target, deleted_at: now, updated_at: now }]
+    if (target.type === 'folder') {
+      for (const child of liveFolderItems(rowsNow, itemId)) {
+        changes.push({ ...child, deleted_at: now, updated_at: now })
+      }
+    }
+    applyRowChanges({ items: changes })
+  }, [applyRowChanges])
 
   const renameItem = useCallback((itemId, pageId, newName) => {
-    setData((prev) => {
-      const pages = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        return {
-          ...page,
-          items: page.items.map((item) =>
-            item.id === itemId ? { ...item, name: newName } : item
-          ),
-        }
-      })
-      return { ...prev, pages }
+    const target = liveItem(rowsRef.current, itemId)
+    if (!target) return
+    applyRowChanges({
+      items: [{ ...target, content: { ...target.content, name: newName }, updated_at: nowIso() }],
     })
-  }, [])
+  }, [applyRowChanges])
 
   const updateBookmark = useCallback((itemId, pageId, updates) => {
-    setData((prev) => {
-      const pages = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        return {
-          ...page,
-          items: page.items.map((item) =>
-            item.id === itemId ? { ...item, ...updates } : item
-          ),
-        }
-      })
-      return { ...prev, pages }
+    const target = liveItem(rowsRef.current, itemId)
+    if (!target) return
+    applyRowChanges({
+      items: [{ ...target, content: { ...target.content, ...updates }, updated_at: nowIso() }],
     })
-  }, [])
+  }, [applyRowChanges])
 
   const moveItem = useCallback((itemId, fromPageId, toPageId, newIndex) => {
-    setData((prev) => {
-      let movingItem = null
-      const pagesAfterRemove = prev.pages.map((page) => {
-        if (page.id !== fromPageId) return page
-        const item = page.items.find((i) => i.id === itemId)
-        if (item) movingItem = item
-        return { ...page, items: page.items.filter((i) => i.id !== itemId) }
-      })
-
-      if (!movingItem) return prev
-
-      const pagesAfterInsert = pagesAfterRemove.map((page) => {
-        if (page.id !== toPageId) return page
-        const items = [...page.items]
-        const clampedIndex = Math.min(newIndex, items.length)
-        items.splice(clampedIndex, 0, movingItem)
-        return { ...page, items }
-      })
-
-      return { ...prev, pages: pagesAfterInsert }
+    const rowsNow = rowsRef.current
+    const target = liveItem(rowsNow, itemId)
+    if (!target) return
+    applyRowChanges({
+      items: [{
+        ...target,
+        page_id: toPageId,
+        folder_id: null,
+        position: positionAt(liveTopItems(rowsNow, toPageId), newIndex, itemId),
+        updated_at: nowIso(),
+      }],
     })
-  }, [])
+  }, [applyRowChanges])
 
   const addToFolder = useCallback((bookmarkId, folderId, pageId) => {
-    setData((prev) => {
-      let bookmark = null
-      const pagesCopy = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        const bm = page.items.find((i) => i.id === bookmarkId && i.type === 'bookmark')
-        if (bm) bookmark = bm
-        return { ...page, items: page.items.filter((i) => i.id !== bookmarkId) }
-      })
-
-      if (!bookmark) return prev
-
-      const pagesWithFolder = pagesCopy.map((page) => {
-        if (page.id !== pageId) return page
-        return {
-          ...page,
-          items: page.items.map((item) => {
-            if (item.id !== folderId || item.type !== 'folder') return item
-            return { ...item, items: [...item.items, bookmark] }
-          }),
-        }
-      })
-
-      return { ...prev, pages: pagesWithFolder }
+    const rowsNow = rowsRef.current
+    const bookmark = liveItem(rowsNow, bookmarkId)
+    const folder = liveItem(rowsNow, folderId)
+    if (!bookmark || bookmark.type !== 'bookmark' || !folder || folder.type !== 'folder') return
+    applyRowChanges({
+      items: [{
+        ...bookmark,
+        page_id: folder.page_id,
+        folder_id: folderId,
+        position: endPosition(liveFolderItems(rowsNow, folderId)),
+        updated_at: nowIso(),
+      }],
     })
-  }, [])
+  }, [applyRowChanges])
 
   const reorderFolderItems = useCallback((folderId, pageId, oldIndex, newIndex) => {
-    setData((prev) => {
-      const pages = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        return {
-          ...page,
-          items: page.items.map((item) => {
-            if (item.id !== folderId || item.type !== 'folder') return item
-            const items = [...item.items]
-            const [removed] = items.splice(oldIndex, 1)
-            items.splice(newIndex, 0, removed)
-            return { ...item, items }
-          }),
-        }
-      })
-      return { ...prev, pages }
+    const children = liveFolderItems(rowsRef.current, folderId)
+    const moved = children[oldIndex]
+    if (!moved) return
+    applyRowChanges({
+      items: [{
+        ...moved,
+        position: positionAt(children, newIndex, moved.id),
+        updated_at: nowIso(),
+      }],
     })
-  }, [])
+  }, [applyRowChanges])
 
   const ejectFromFolder = useCallback((bookmarkId, folderId, pageId) => {
-    const sourceIdx = data.pages.findIndex((p) => p.id === pageId)
-    const targetIdx = data.pages.findIndex((page, idx) => idx >= sourceIdx && page.items.length < 20)
+    const rowsNow = rowsRef.current
+    const bookmark = liveItem(rowsNow, bookmarkId)
+    if (!bookmark) return
 
-    setData((prev) => {
-      let ejected = null
-      const pagesAfterRemove = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        return {
-          ...page,
-          items: page.items.map((item) => {
-            if (item.id !== folderId || item.type !== 'folder') return item
-            const bm = item.items.find((b) => b.id === bookmarkId)
-            if (bm) ejected = bm
-            return { ...item, items: item.items.filter((b) => b.id !== bookmarkId) }
-          }),
-        }
+    const pages = livePages(rowsNow)
+    const sourceIdx = pages.findIndex((p) => p.id === pageId)
+    let targetIdx = pages.findIndex(
+      (p, idx) => idx >= sourceIdx && liveTopItems(rowsNow, p.id).length < 20
+    )
+
+    const changes = { pages: [], items: [] }
+    let targetPageId
+    if (targetIdx === -1) {
+      targetPageId = crypto.randomUUID()
+      changes.pages.push({
+        id: targetPageId,
+        position: endPosition(pages),
+        deleted_at: null,
+        updated_at: nowIso(),
       })
-      if (!ejected) return prev
+      targetIdx = pages.length
+    } else {
+      targetPageId = pages[targetIdx].id
+    }
 
-      let pages = pagesAfterRemove
-      let resolvedIdx = targetIdx
-
-      if (resolvedIdx === -1) {
-        pages = [...pagesAfterRemove, { id: crypto.randomUUID(), items: [] }]
-        resolvedIdx = pages.length - 1
-      }
-
-      return {
-        ...prev,
-        pages: pages.map((page, idx) => {
-          if (idx !== resolvedIdx) return page
-          return { ...page, items: [...page.items, ejected] }
-        }),
-      }
+    changes.items.push({
+      ...bookmark,
+      page_id: targetPageId,
+      folder_id: null,
+      position: endPosition(liveTopItems(rowsNow, targetPageId)),
+      updated_at: nowIso(),
     })
-
-    const newPage = targetIdx !== -1 ? targetIdx : data.pages.length
-    if (newPage !== currentPage) setCurrentPage(newPage)
-  }, [currentPage, data.pages])
+    applyRowChanges(changes)
+    if (targetIdx !== currentPage) setCurrentPage(targetIdx)
+  }, [currentPage, applyRowChanges])
 
   const removeFromFolder = useCallback((bookmarkId, folderId, pageId) => {
-    setData((prev) => {
-      const pages = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        return {
-          ...page,
-          items: page.items.map((item) => {
-            if (item.id !== folderId || item.type !== 'folder') return item
-            return { ...item, items: item.items.filter((bm) => bm.id !== bookmarkId) }
-          }),
-        }
-      })
-      return { ...prev, pages }
-    })
-  }, [])
+    const target = liveItem(rowsRef.current, bookmarkId)
+    if (!target) return
+    const now = nowIso()
+    applyRowChanges({ items: [{ ...target, deleted_at: now, updated_at: now }] })
+  }, [applyRowChanges])
 
   const addPage = useCallback(() => {
-    setData((prev) => ({
-      ...prev,
-      pages: [
-        ...prev.pages,
-        { id: crypto.randomUUID(), items: [] },
-      ],
-    }))
+    applyRowChanges({
+      pages: [{
+        id: crypto.randomUUID(),
+        position: endPosition(livePages(rowsRef.current)),
+        deleted_at: null,
+        updated_at: nowIso(),
+      }],
+    })
     setCurrentPage((prev) => prev + 1)
-  }, [])
+  }, [applyRowChanges])
 
   const deletePage = useCallback((pageId) => {
-    setData((prev) => {
-      if (prev.pages.length <= 1) return prev
-      const newPages = prev.pages.filter((p) => p.id !== pageId)
-      return { ...prev, pages: newPages }
-    })
-  }, [])
+    const rowsNow = rowsRef.current
+    const pages = livePages(rowsNow)
+    if (pages.length <= 1) return
+    const now = nowIso()
+    const page = pages.find((p) => p.id === pageId)
+    if (!page) return
+
+    const changes = { pages: [{ ...page, deleted_at: now, updated_at: now }], items: [] }
+    const folderIds = new Set()
+    for (const item of liveTopItems(rowsNow, pageId)) {
+      if (item.type === 'folder') folderIds.add(item.id)
+      changes.items.push({ ...item, deleted_at: now, updated_at: now })
+    }
+    // Folder children track their folder, not the page they were created
+    // on, so tombstone them through their parent
+    for (const item of rowsNow.items) {
+      if (!item.deleted_at && item.folder_id && folderIds.has(item.folder_id)) {
+        changes.items.push({ ...item, deleted_at: now, updated_at: now })
+      }
+    }
+    applyRowChanges(changes)
+  }, [applyRowChanges])
 
   const importData = useCallback(async (file) => {
     const parsed = await importDataUtil(file)
-    setData(parsed)
+    const rowsNow = rowsRef.current
+    const now = nowIso()
+    const changes = { pages: [], items: [] }
+    for (const p of rowsNow.pages) {
+      if (!p.deleted_at) changes.pages.push({ ...p, deleted_at: now, updated_at: now })
+    }
+    for (const i of rowsNow.items) {
+      if (!i.deleted_at) changes.items.push({ ...i, deleted_at: now, updated_at: now })
+    }
+    const source = parsed.pages.length > 0
+      ? parsed
+      : { pages: [{ id: crypto.randomUUID(), items: [] }] }
+    const fresh = nestedToRows(source)
+    // Re-imports of an old export can reuse live ids; the fresh rows come
+    // last so they win over the tombstones above
+    changes.pages.push(...fresh.pages)
+    changes.items.push(...fresh.items)
+    applyRowChanges(changes)
     setCurrentPage(0)
     setEditMode(false)
-  }, [])
+  }, [applyRowChanges])
 
   const exportData = useCallback(() => {
-    exportDataUtil()
+    exportDataUtil(rowsToNested(rowsRef.current))
   }, [])
 
   const reorderItems = useCallback((pageId, oldIndex, newIndex) => {
-    setData((prev) => {
-      const pages = prev.pages.map((page) => {
-        if (page.id !== pageId) return page
-        const items = [...page.items]
-        const [removed] = items.splice(oldIndex, 1)
-        items.splice(newIndex, 0, removed)
-        return { ...page, items }
-      })
-      return { ...prev, pages }
+    const list = liveTopItems(rowsRef.current, pageId)
+    const moved = list[oldIndex]
+    if (!moved) return
+    applyRowChanges({
+      items: [{
+        ...moved,
+        position: positionAt(list, newIndex, moved.id),
+        updated_at: nowIso(),
+      }],
     })
-  }, [])
+  }, [applyRowChanges])
 
   return {
     reorderFolderItems,
