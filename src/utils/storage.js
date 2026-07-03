@@ -158,10 +158,13 @@ export function mergeData(localData, serverData) {
   return { ...serverData, pages }
 }
 
-export function exportData() {
+export function exportData(currentData) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    const data = raw ? JSON.parse(raw) : createDefaultData()
+    let data = currentData
+    if (!data) {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      data = raw ? JSON.parse(raw) : createDefaultData()
+    }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')

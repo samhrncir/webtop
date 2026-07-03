@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase.js'
+import { clearLocalData, claimLocalData } from './utils/syncV2.js'
 import { useHomescreen } from './hooks/useHomescreen.js'
 import AuthScreen from './components/AuthScreen/AuthScreen.jsx'
 import SearchBar from './components/SearchBar/SearchBar.jsx'
@@ -90,10 +91,19 @@ export default function App() {
   const [session, setSession] = useState(undefined)
 
   useEffect(() => {
+    // Claiming/clearing runs synchronously before setSession, so by the time
+    // HomescreenApp mounts and bootstraps from localStorage, data left behind
+    // by another account is already gone
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) claimLocalData(session.user.id)
       setSession(session)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        clearLocalData()
+      } else if (session?.user) {
+        claimLocalData(session.user.id)
+      }
       setSession(session)
     })
     return () => subscription.unsubscribe()
