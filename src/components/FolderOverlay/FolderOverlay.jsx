@@ -35,7 +35,13 @@ function SortableBookmark({ bookmark, editMode, onDelete, onOpen, frozen }) {
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      onContextMenu={(e) => e.preventDefault()}
+      {...attributes}
+      {...listeners}
+    >
       <AppIcon
         item={bookmark}
         editMode={editMode}

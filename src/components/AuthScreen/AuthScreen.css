@@ -74,6 +74,13 @@
   transition: border-color 0.15s;
 }
 
+/* iOS auto-zooms the page when a focused input is under 16px */
+@media (hover: none) and (pointer: coarse) {
+  .auth-input {
+    font-size: 16px;
+  }
+}
+
 .auth-input:focus {
   border-color: var(--accent-border);
 }

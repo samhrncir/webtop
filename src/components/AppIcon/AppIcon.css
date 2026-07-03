@@ -6,8 +6,11 @@
   cursor: pointer;
   position: relative;
   width: 72px;
+  max-width: 100%;
   user-select: none;
   -webkit-user-select: none;
+  /* Stop the iOS long-press callout from hijacking the drag gesture */
+  -webkit-touch-callout: none;
   transition: transform 0.15s;
 }
 
@@ -89,7 +92,7 @@
   font-size: 11px;
   color: var(--icon-label-color);
   text-align: center;
-  max-width: 72px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -130,7 +133,15 @@
   border-radius: 4px;
   text-align: center;
   width: 72px;
+  max-width: 100%;
   padding: 2px 4px;
   outline: none;
   font-family: inherit;
+}
+
+/* iOS auto-zooms the page when a focused input is under 16px */
+@media (hover: none) and (pointer: coarse) {
+  .app-icon-rename-input {
+    font-size: 16px;
+  }
 }

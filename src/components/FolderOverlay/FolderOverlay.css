@@ -95,6 +95,21 @@
   padding: 4px 0;
 }
 
+/* Narrow screens: the fixed 4×72px grid is wider than the modal, so use
+   fluid columns and slim down the modal chrome */
+@media (max-width: 480px) {
+  .folder-overlay-modal {
+    min-width: 0;
+    width: 94vw;
+    padding: 20px 14px 16px;
+  }
+
+  .folder-overlay-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px 8px;
+  }
+}
+
 .folder-overlay-empty {
   text-align: center;
   color: var(--text-muted);

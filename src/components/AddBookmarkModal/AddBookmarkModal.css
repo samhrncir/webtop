@@ -111,6 +111,13 @@
   width: 100%;
 }
 
+/* iOS auto-zooms the page when a focused input is under 16px */
+@media (hover: none) and (pointer: coarse) {
+  .add-modal-input {
+    font-size: 16px;
+  }
+}
+
 .add-modal-input:focus {
   border-color: var(--accent-border);
   background: var(--surface-hover);

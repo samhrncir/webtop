@@ -69,6 +69,16 @@
   overflow-y: auto;
 }
 
+/* Narrow screens: fixed 72px columns + padding need 384px, so switch to
+   fluid columns that share the available width */
+@media (max-width: 480px) {
+  .homescreen-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px 8px;
+    padding: 56px 12px 24px;
+  }
+}
+
 /* DnD overlay style */
 .dnd-drag-overlay {
   opacity: 0.85;
@@ -84,6 +94,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Required for dnd-kit TouchSensor: stops the browser from scrolling
+     the grid while a long-press drag is in progress */
+  touch-action: none;
 }
 
 .sortable-item.is-dragging {
@@ -178,6 +191,15 @@
 
 .page-nav-btn:active {
   transform: scale(0.95);
+}
+
+/* Touch devices: the invisible 64px edge zones sit on top of the grid and
+   swallow taps on edge icons, and hover-revealed arrows never show anyway.
+   Hide them — swipe and the page dots handle navigation. */
+@media (hover: none) and (pointer: coarse) {
+  .page-nav-zone {
+    display: none;
+  }
 }
 
 /* Page empty hint */

@@ -46,6 +46,7 @@ function SortableItem({ id, children, isOverFolder }) {
       ref={setNodeRef}
       style={style}
       className={`sortable-item${isDragging ? ' is-dragging' : ''}${isOverFolder ? ' folder-drop-target' : ''}`}
+      onContextMenu={(e) => e.preventDefault()}
       {...attributes}
       {...listeners}
     >
@@ -88,6 +89,9 @@ export default function HomeScreen({
   const touchStartY = useRef(null)
   const dragStartPageId = useRef(null)
   const pageNavTimerRef = useRef(null)
+  // True while the current touch gesture is an icon drag, so touchend
+  // doesn't also fire a page swipe on top of the reorder
+  const suppressSwipeRef = useRef(false)
 
   const page = data.pages[currentPage]
   const items = page ? page.items : []
@@ -132,12 +136,18 @@ export default function HomeScreen({
 
   // Touch swipe for page navigation
   const handleTouchStart = useCallback((e) => {
+    suppressSwipeRef.current = false
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
   }, [])
 
   const handleTouchEnd = useCallback((e) => {
     if (touchStartX.current === null) return
+    if (suppressSwipeRef.current) {
+      touchStartX.current = null
+      touchStartY.current = null
+      return
+    }
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
@@ -205,6 +215,7 @@ export default function HomeScreen({
   const sortStrategy = isOverFolder ? () => [] : rectSortingStrategy
 
   const handleDragStart = useCallback(({ active }) => {
+    suppressSwipeRef.current = true
     setActiveDragId(active.id)
     dragStartPageId.current = pageId
   }, [pageId])

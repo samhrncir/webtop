@@ -47,6 +47,13 @@
   color: var(--text-muted);
 }
 
+/* iOS auto-zooms the page when a focused input is under 16px */
+@media (hover: none) and (pointer: coarse) {
+  .search-bar-input {
+    font-size: 16px;
+  }
+}
+
 .search-bar-clear {
   background: none;
   border: none;
