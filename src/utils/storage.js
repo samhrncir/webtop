@@ -58,35 +58,104 @@ export function saveData(data) {
   }
 }
 
+// Fetch the server copy along with its updated_at, which acts as a version
+// token for optimistic concurrency.
+// Returns one of:
+//   { status: 'ok', data, updatedAt }  — usable server copy
+//   { status: 'empty' }                — no row yet (new user)
+//   { status: 'invalid', updatedAt }   — row exists but blob failed validation
+//   { status: 'error' }                — network/auth failure, server state unknown
 export async function fetchFromServer() {
   const { data, error } = await supabase
     .from('homescreen_data')
-    .select('data')
-    .single()
-  if (error || !data) return null
-  if (!isValidData(data.data)) return null
-  return data.data
+    .select('data, updated_at')
+    .maybeSingle()
+  if (error) return { status: 'error' }
+  if (!data) return { status: 'empty' }
+  if (!isValidData(data.data)) return { status: 'invalid', updatedAt: data.updated_at }
+  return { status: 'ok', data: data.data, updatedAt: data.updated_at }
 }
 
-export async function syncToServer(data) {
+// Conditional write: only succeeds if the server row still has the updated_at
+// we last saw (expectedUpdatedAt). Pass null when no row is known to exist —
+// then an insert is attempted instead.
+// Returns { status: 'ok', updatedAt } | { status: 'conflict' } | { status: 'error' }
+export async function syncToServer(data, expectedUpdatedAt) {
   const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) return false
-  const { error } = await supabase
-    .from('homescreen_data')
-    .upsert(
-      { user_id: session.user.id, data, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id' }
-    )
-  if (error) {
-    localStorage.setItem(PENDING_SYNC_KEY, 'true')
-    return false
+  if (!session?.user) return { status: 'error' }
+  const now = new Date().toISOString()
+
+  if (expectedUpdatedAt) {
+    const { data: rows, error } = await supabase
+      .from('homescreen_data')
+      .update({ data, updated_at: now })
+      .eq('user_id', session.user.id)
+      .eq('updated_at', expectedUpdatedAt)
+      .select('updated_at')
+    if (error) return { status: 'error' }
+    // Zero rows updated means another session wrote first
+    if (!rows || rows.length === 0) return { status: 'conflict' }
+    return { status: 'ok', updatedAt: rows[0].updated_at }
   }
+
+  const { data: rows, error } = await supabase
+    .from('homescreen_data')
+    .insert({ user_id: session.user.id, data, updated_at: now })
+    .select('updated_at')
+  if (error) {
+    // 23505 = unique violation: a row appeared since we last checked
+    return { status: error.code === '23505' ? 'conflict' : 'error' }
+  }
+  return { status: 'ok', updatedAt: rows[0].updated_at }
+}
+
+export function setPendingSync() {
+  localStorage.setItem(PENDING_SYNC_KEY, 'true')
+}
+
+export function clearPendingSync() {
   localStorage.removeItem(PENDING_SYNC_KEY)
-  return true
 }
 
 export function hasPendingSync() {
   return localStorage.getItem(PENDING_SYNC_KEY) === 'true'
+}
+
+// Union merge of two datasets by id. Server ordering wins; local wins on
+// same-id content (local holds this device's unsynced edits). Items deleted
+// on one side but present on the other are resurrected — acceptable tradeoff
+// for a stopgap; per-item sync would fix this properly.
+function mergeItems(localItems, serverItems) {
+  const localById = new Map(localItems.map((item) => [item.id, item]))
+  const merged = serverItems.map((serverItem) => {
+    const localItem = localById.get(serverItem.id)
+    if (!localItem) return serverItem
+    localById.delete(serverItem.id)
+    if (serverItem.type === 'folder' && localItem.type === 'folder') {
+      return { ...localItem, items: mergeItems(localItem.items, serverItem.items) }
+    }
+    return localItem
+  })
+  for (const item of localItems) {
+    if (localById.has(item.id)) merged.push(item)
+  }
+  return merged
+}
+
+export function mergeData(localData, serverData) {
+  const localPages = new Map(localData.pages.map((page) => [page.id, page]))
+  const pages = serverData.pages.map((serverPage) => {
+    const localPage = localPages.get(serverPage.id)
+    if (!localPage) return serverPage
+    localPages.delete(serverPage.id)
+    return { ...serverPage, items: mergeItems(localPage.items, serverPage.items) }
+  })
+  for (const page of localData.pages) {
+    // Skip empty local-only pages (e.g. another device's untouched default page)
+    if (localPages.has(page.id) && page.items.length > 0) pages.push(page)
+  }
+  if (pages.length === 0) pages.push({ id: crypto.randomUUID(), items: [] })
+  return { ...serverData, pages }
 }
 
 export function exportData() {
