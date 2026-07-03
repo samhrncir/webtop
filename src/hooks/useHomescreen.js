@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  loadData, saveData,
-  fetchFromServer, syncToServer, hasPendingSync,
+  loadData, saveData, mergeData,
+  fetchFromServer, syncToServer,
+  hasPendingSync, setPendingSync, clearPendingSync,
   exportData as exportDataUtil, importData as importDataUtil,
 } from '../utils/storage.js'
 
@@ -10,56 +11,124 @@ export function useHomescreen() {
   const [currentPage, setCurrentPage] = useState(0)
   const [editMode, setEditMode] = useState(false)
   const syncTimerRef = useRef(null)
+  // JSON of the last state confirmed written to the server
   const lastSyncedRef = useRef(null)
+  // Version token (updated_at) of the server row we last saw — conditional
+  // writes use this so a stale session can't silently overwrite a newer copy
+  const serverUpdatedAtRef = useRef(null)
+  // Pushes are blocked until the initial server reconcile has succeeded, so
+  // stale/empty local data can never race past the fetch and clobber the server
+  const hydratedRef = useRef(false)
+  const dataRef = useRef(data)
+  // Snapshot of what was loaded from localStorage, to tell "user edited
+  // something" apart from "initial render" when marking the dirty flag
+  const initialSerializedRef = useRef(null)
+  if (initialSerializedRef.current === null) {
+    initialSerializedRef.current = JSON.stringify(data)
+  }
+
+  const pushToServer = useCallback(async (payload) => {
+    const serialized = JSON.stringify(payload)
+    const result = await syncToServer(payload, serverUpdatedAtRef.current)
+    if (result.status === 'ok') {
+      serverUpdatedAtRef.current = result.updatedAt
+      lastSyncedRef.current = serialized
+      clearPendingSync()
+    } else if (result.status === 'conflict') {
+      // Another session wrote first — pull its copy, merge ours in, and let
+      // the data effect re-push the merged result with the fresh version token
+      const server = await fetchFromServer()
+      if (server.status === 'ok') {
+        serverUpdatedAtRef.current = server.updatedAt
+        const merged = mergeData(dataRef.current, server.data)
+        const mergedSerialized = JSON.stringify(merged)
+        if (mergedSerialized === JSON.stringify(server.data)) {
+          // Nothing local to contribute — adopt server copy as synced
+          lastSyncedRef.current = mergedSerialized
+          clearPendingSync()
+        }
+        setData(merged)
+      }
+    }
+    // 'error' (offline etc.): dirty flag stays set; retried on 'online' or next edit
+  }, [])
+
+  // Reconcile local state with the server: adopt the server copy when local is
+  // clean, merge when local has unsynced edits (dirty flag), push local up when
+  // the server has nothing. Runs on mount and when connectivity returns.
+  const reconcile = useCallback(async (attempt = 0) => {
+    const server = await fetchFromServer()
+    if (server.status === 'error') return // unreachable — stay unhydrated, retry on 'online'
+
+    if (server.status === 'empty' || server.status === 'invalid') {
+      // No usable server copy — push local up
+      if (server.status === 'invalid') serverUpdatedAtRef.current = server.updatedAt
+      const local = dataRef.current
+      const result = await syncToServer(local, serverUpdatedAtRef.current)
+      if (result.status === 'ok') {
+        serverUpdatedAtRef.current = result.updatedAt
+        lastSyncedRef.current = JSON.stringify(local)
+        clearPendingSync()
+        hydratedRef.current = true
+      } else if (result.status === 'conflict' && attempt < 2) {
+        // A row appeared concurrently — re-run against it
+        return reconcile(attempt + 1)
+      }
+      return
+    }
+
+    // Guard against adopting a stale fetch that raced with an in-flight push
+    if (
+      hydratedRef.current &&
+      serverUpdatedAtRef.current &&
+      server.updatedAt <= serverUpdatedAtRef.current
+    ) return
+
+    serverUpdatedAtRef.current = server.updatedAt
+    if (hasPendingSync()) {
+      // Local has edits the server never saw — merge instead of letting the
+      // server copy overwrite them
+      const merged = mergeData(dataRef.current, server.data)
+      const mergedSerialized = JSON.stringify(merged)
+      if (mergedSerialized === JSON.stringify(server.data)) {
+        lastSyncedRef.current = mergedSerialized
+        clearPendingSync()
+      }
+      hydratedRef.current = true
+      setData(merged) // if still dirty, the data effect pushes the merge up
+    } else {
+      lastSyncedRef.current = JSON.stringify(server.data)
+      hydratedRef.current = true
+      setData(server.data)
+    }
+  }, [])
 
   // Save to localStorage and debounce sync to server on every data change
   useEffect(() => {
+    dataRef.current = data
     saveData(data)
 
     const serialized = JSON.stringify(data)
     if (serialized === lastSyncedRef.current) return
+    // Mark dirty so edits survive a close/reload even if the push never fires
+    if (serialized !== initialSerializedRef.current) setPendingSync()
+    if (!hydratedRef.current) return // initial reconcile hasn't completed yet
 
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
-    syncTimerRef.current = setTimeout(async () => {
-      const ok = await syncToServer(data)
-      if (ok) lastSyncedRef.current = serialized
-    }, 800)
+    syncTimerRef.current = setTimeout(() => pushToServer(dataRef.current), 800)
 
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current)
     }
-  }, [data])
+  }, [data, pushToServer])
 
-  // On mount: load from server, retry pending syncs when coming back online
+  // On mount: reconcile with the server; re-reconcile when connectivity returns
   useEffect(() => {
-    let cancelled = false
-
-    async function init() {
-      const serverData = await fetchFromServer()
-      if (cancelled) return
-      if (serverData) {
-        lastSyncedRef.current = JSON.stringify(serverData)
-        setData(serverData)
-      } else {
-        // New device for this user — push existing local data up
-        const local = loadData()
-        const ok = await syncToServer(local)
-        if (ok) lastSyncedRef.current = JSON.stringify(local)
-      }
-    }
-
-    init()
-
-    const handleOnline = () => {
-      if (hasPendingSync()) syncToServer(loadData())
-    }
+    reconcile()
+    const handleOnline = () => reconcile()
     window.addEventListener('online', handleOnline)
-
-    return () => {
-      cancelled = true
-      window.removeEventListener('online', handleOnline)
-    }
-  }, [])
+    return () => window.removeEventListener('online', handleOnline)
+  }, [reconcile])
 
   // Clamp currentPage if pages are removed
   useEffect(() => {
