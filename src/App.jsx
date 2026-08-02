@@ -5,6 +5,7 @@ import { useHomescreen } from './hooks/useHomescreen.js'
 import AuthScreen from './components/AuthScreen/AuthScreen.jsx'
 import SearchBar from './components/SearchBar/SearchBar.jsx'
 import HomeScreen from './components/HomeScreen/HomeScreen.jsx'
+import Taskbar from './components/Taskbar/Taskbar.jsx'
 import PageIndicator from './components/PageIndicator/PageIndicator.jsx'
 import SettingsPage from './components/SettingsPage/SettingsPage.jsx'
 import './App.css'
@@ -26,6 +27,9 @@ function HomescreenApp() {
     deleteItem,
     renameItem,
     updateBookmark,
+    pinned,
+    togglePin,
+    reorderPinned,
     moveItem,
     addToFolder,
     removeFromFolder,
@@ -57,6 +61,7 @@ function HomescreenApp() {
             deleteItem={deleteItem}
             renameItem={renameItem}
             updateBookmark={updateBookmark}
+            togglePin={togglePin}
             reorderItems={reorderItems}
             moveItem={moveItem}
             addToFolder={addToFolder}
@@ -67,6 +72,12 @@ function HomescreenApp() {
             onOpenSettings={() => setView('settings')}
             folderToOpen={folderToOpen}
             clearFolderToOpen={() => setFolderToOpen(null)}
+          />
+          <Taskbar
+            pinned={pinned}
+            onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+            onUnpin={togglePin}
+            onReorder={reorderPinned}
           />
           <PageIndicator
             pages={data.pages}

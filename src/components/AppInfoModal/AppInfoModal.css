@@ -175,6 +175,40 @@
 }
 
 /* Sub pages section */
+.app-info-pin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.app-info-pin-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.app-info-pin-btn.pinned {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.app-info-pin-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
 .app-info-suburl-section {
   display: flex;
   flex-direction: column;
