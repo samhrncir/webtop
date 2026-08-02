@@ -1,14 +1,14 @@
 import React, { useState, useRef } from 'react'
-import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { useIconSource } from '../../hooks/useIconSource.js'
 import './SearchBar.css'
 
 function ResultIcon({ item }) {
-  const [imgError, setImgError] = useState(false)
-  const faviconUrl = item.type === 'bookmark' ? getFaviconUrl(item.url) : null
+  const { src: iconSrc, onError: onIconError } = useIconSource(item)
   const bg = getColorForName(item.name)
   const letter = getInitialLetter(item.name)
 
-  if (item.type === 'folder' || !faviconUrl || imgError) {
+  if (item.type === 'folder' || !iconSrc) {
     return (
       <div className="search-result-icon" style={{ background: bg }}>
         {item.type === 'folder' ? '📁' : letter}
@@ -18,7 +18,7 @@ function ResultIcon({ item }) {
 
   return (
     <div className="search-result-icon" style={{ background: bg }}>
-      <img src={faviconUrl} alt="" onError={() => setImgError(true)} />
+      <img src={iconSrc} alt="" onError={onIconError} />
     </div>
   )
 }

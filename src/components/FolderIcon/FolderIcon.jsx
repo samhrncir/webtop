@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from 'react'
-import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { useIconSource } from '../../hooks/useIconSource.js'
 import './FolderIcon.css'
 
 function PreviewCell({ bookmark }) {
-  const [imgError, setImgError] = useState(false)
-  const faviconUrl = getFaviconUrl(bookmark.url)
+  const { src: iconSrc, onError: onIconError } = useIconSource(bookmark)
   const bg = getColorForName(bookmark.name)
   const letter = getInitialLetter(bookmark.name)
 
-  if (!faviconUrl || imgError) {
+  if (!iconSrc) {
     return (
       <div className="folder-preview-cell">
         <div className="folder-preview-letter" style={{ background: bg }}>
@@ -20,7 +20,7 @@ function PreviewCell({ bookmark }) {
 
   return (
     <div className="folder-preview-cell" style={{ background: bg }}>
-      <img src={faviconUrl} alt="" onError={() => setImgError(true)} />
+      <img src={iconSrc} alt="" onError={onIconError} />
     </div>
   )
 }

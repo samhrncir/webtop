@@ -14,7 +14,8 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName, isSafeIconUrl } from '../../utils/favicon.js'
+import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import './AppInfoModal.css'
 
@@ -63,16 +64,18 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
 export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
+  const [icon, setIcon] = useState(item.icon || '')
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
   const [editMode, setEditMode] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newSubName, setNewSubName] = useState('')
   const [newSubUrl, setNewSubUrl] = useState('')
-  const [imgError, setImgError] = useState(false)
 
-  const faviconUrl = getFaviconUrl(item.url)
+  // Preview the draft values so a typed icon URL updates live while editing
+  const { src: iconSrc, onError: onIconError } = useIconSource({ icon, url })
   const letter = getInitialLetter(item.name)
   const bgColor = getColorForName(item.name)
+  const iconInvalid = icon.trim().length > 0 && !isSafeIconUrl(icon.trim())
 
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose() }
@@ -90,6 +93,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
   const handleCancel = useCallback(() => {
     setName(item.name)
     setUrl(item.url)
+    setIcon(item.icon || '')
     setSubUrls(item.subUrls || [])
     setEditMode(false)
     setShowAddForm(false)
@@ -101,11 +105,12 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
     onSave({
       name: name.trim() || item.name,
       url: url.trim() || item.url,
+      icon: icon.trim() || null,
       subUrls,
     })
     setEditMode(false)
     onClose()
-  }, [name, url, subUrls, item, onSave, onClose])
+  }, [name, url, icon, subUrls, item, onSave, onClose])
 
   const handleDelete = useCallback(() => {
     if (window.confirm(`Delete "${item.name}"?`)) {
@@ -169,11 +174,11 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
 
         <div className="app-info-identity">
           <div className="app-info-favicon-wrap">
-            {!imgError && faviconUrl ? (
+            {iconSrc ? (
               <img
-                src={faviconUrl}
+                src={iconSrc}
                 alt={item.name}
-                onError={() => setImgError(true)}
+                onError={onIconError}
                 className="app-info-favicon"
                 draggable={false}
               />
@@ -199,6 +204,19 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
                   autoComplete="off"
                   spellCheck={false}
                 />
+                <input
+                  className="app-info-input app-info-input--url"
+                  value={icon}
+                  onChange={(e) => setIcon(e.target.value)}
+                  placeholder="Custom icon URL (optional)"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <p className={`app-info-url-hint${iconInvalid ? ' app-info-url-hint--error' : ''}`}>
+                  {iconInvalid
+                    ? 'Icon URL must start with http:// or https://'
+                    : "Leave blank to use the site's favicon."}
+                </p>
               </>
             ) : (
               <>

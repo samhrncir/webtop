@@ -367,6 +367,10 @@
   line-height: 1.4;
 }
 
+.app-info-url-hint--error {
+  color: #fc8181;
+}
+
 .app-info-url-hint code {
   font-family: monospace;
   background: var(--surface-hover);
