@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { matchAlias } from '../../utils/aliases.js'
 import './SearchBar.css'
 
 function ResultIcon({ item }) {
@@ -45,16 +46,24 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
       page.items.forEach((item) => {
         const nameMatch = item.name.toLowerCase().includes(q)
         const urlMatch = item.type === 'bookmark' && item.url.toLowerCase().includes(q)
-        if (nameMatch || urlMatch) {
-          results.push({ item, pageIdx })
+        const aliasMatch = matchAlias(item, q)
+        if (nameMatch || urlMatch || aliasMatch) {
+          // Only surface the alias when the name doesn't already explain the hit
+          results.push({ item, pageIdx, matchedAlias: nameMatch ? null : aliasMatch })
         }
         // Search inside folders too
         if (item.type === 'folder') {
           item.items.forEach((bm) => {
             const bmNameMatch = bm.name.toLowerCase().includes(q)
             const bmUrlMatch = bm.url.toLowerCase().includes(q)
-            if (bmNameMatch || bmUrlMatch) {
-              results.push({ item: bm, pageIdx, inFolder: item.name })
+            const bmAliasMatch = matchAlias(bm, q)
+            if (bmNameMatch || bmUrlMatch || bmAliasMatch) {
+              results.push({
+                item: bm,
+                pageIdx,
+                inFolder: item.name,
+                matchedAlias: bmNameMatch ? null : bmAliasMatch,
+              })
             }
           })
         }
@@ -153,6 +162,9 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
                   <span className="search-result-name">{result.item.name}</span>
                   {result.item.type === 'bookmark' && (
                     <span className="search-result-url">{result.item.url}</span>
+                  )}
+                  {result.matchedAlias && (
+                    <span className="search-result-alias">alias: {result.matchedAlias}</span>
                   )}
                   {result.inFolder && (
                     <span className="search-result-url">in {result.inFolder}</span>

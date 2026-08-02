@@ -141,6 +141,15 @@
   text-overflow: ellipsis;
 }
 
+.search-result-alias {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .search-result-page-badge {
   margin-left: auto;
   font-size: 11px;

@@ -452,10 +452,12 @@ export default function HomeScreen({
           editMode={editMode}
           onClose={() => setActiveFolder(null)}
           onOpenBookmark={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+          onOpenAppInfo={handleOpenAppInfo}
           onDeleteFromFolder={handleDeleteFromFolder}
           onRenameFolder={handleRenameFolder}
           onEjectFromFolder={handleEjectFromFolder}
           onReorderFolderItems={handleReorderFolderItems}
+          appInfoOpen={!!appInfoItem}
         />
       )}
 
