@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import { matchAlias } from '../../utils/aliases.js'
+import { flattenBookmarks, getTags, hasTag, itemMatchesQuery } from '../../utils/tags.js'
 import './SearchBar.css'
 
 function ResultIcon({ item }) {
@@ -24,7 +25,7 @@ function ResultIcon({ item }) {
   )
 }
 
-export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
+export default function SearchBar({ data, onNavigateToPage, onOpenFolder, activeTag = null }) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
@@ -36,42 +37,24 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
     inputRef.current?.focus()
   }
 
-  // Gather all searchable items across all pages
+  // Gather all searchable items across all pages. Bookmarks match on name,
+  // url, alias or tag; folders on name only. A tag filter narrows results to
+  // that tag, which means folders drop out entirely — they can't be tagged.
   const allResults = React.useMemo(() => {
     if (!query.trim()) return []
     const q = query.trim().toLowerCase()
-    const results = []
 
-    data.pages.forEach((page, pageIdx) => {
-      page.items.forEach((item) => {
-        const nameMatch = item.name.toLowerCase().includes(q)
-        const urlMatch = item.type === 'bookmark' && item.url.toLowerCase().includes(q)
-        const aliasMatch = matchAlias(item, q)
-        if (nameMatch || urlMatch || aliasMatch) {
-          // Only surface the alias when the name doesn't already explain the hit
-          results.push({ item, pageIdx, matchedAlias: nameMatch ? null : aliasMatch })
-        }
-        // Search inside folders too
-        if (item.type === 'folder') {
-          item.items.forEach((bm) => {
-            const bmNameMatch = bm.name.toLowerCase().includes(q)
-            const bmUrlMatch = bm.url.toLowerCase().includes(q)
-            const bmAliasMatch = matchAlias(bm, q)
-            if (bmNameMatch || bmUrlMatch || bmAliasMatch) {
-              results.push({
-                item: bm,
-                pageIdx,
-                inFolder: item.name,
-                matchedAlias: bmNameMatch ? null : bmAliasMatch,
-              })
-            }
-          })
-        }
-      })
-    })
-
-    return results
-  }, [query, data])
+    return flattenBookmarks(data, { includeFolders: !activeTag })
+      .map((entry) => ({
+        ...entry,
+        // Only surface the alias when the name doesn't already explain the hit
+        matchedAlias: entry.item.name?.toLowerCase().includes(q)
+          ? null
+          : matchAlias(entry.item, q),
+      }))
+      .filter(({ item, matchedAlias }) => itemMatchesQuery(item, q) || matchedAlias)
+      .filter(({ item }) => !activeTag || hasTag(item, activeTag))
+  }, [query, data, activeTag])
 
   const handleResultClick = (result) => {
     if (result.item.type === 'folder') {
@@ -120,7 +103,7 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
           ref={inputRef}
           className="search-bar-input"
           type="text"
-          placeholder="Search bookmarks..."
+          placeholder={activeTag ? `Search #${activeTag}...` : 'Search bookmarks...'}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -144,7 +127,9 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
       {showOverlay && (
         <div className="search-results-overlay" id="search-results-listbox" role="listbox">
           {allResults.length === 0 ? (
-            <div className="search-no-results">No bookmarks found</div>
+            <div className="search-no-results">
+              {activeTag ? `No bookmarks tagged “${activeTag}” found` : 'No bookmarks found'}
+            </div>
           ) : (
             allResults.map((result, idx) => (
               <div
@@ -168,6 +153,13 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
                   )}
                   {result.inFolder && (
                     <span className="search-result-url">in {result.inFolder}</span>
+                  )}
+                  {getTags(result.item).length > 0 && (
+                    <span className="search-result-tags">
+                      {getTags(result.item).map((tag) => (
+                        <span key={tag} className="search-result-tag">{tag}</span>
+                      ))}
+                    </span>
                   )}
                 </div>
                 <span className="search-result-page-badge">

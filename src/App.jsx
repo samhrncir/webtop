@@ -12,6 +12,8 @@ import './App.css'
 function HomescreenApp() {
   const [view, setView] = useState('home')
   const [folderToOpen, setFolderToOpen] = useState(null)
+  // One tag at a time, shared so the chips scope both the grid and search
+  const [activeTag, setActiveTag] = useState(null)
 
   const {
     ejectFromFolder,
@@ -43,6 +45,7 @@ function HomescreenApp() {
         <div className="app-home">
           <SearchBar
             data={data}
+            activeTag={activeTag}
             onNavigateToPage={setCurrentPage}
             onOpenFolder={(folder, pageIdx) => { setCurrentPage(pageIdx); setFolderToOpen(folder) }}
           />
@@ -67,15 +70,20 @@ function HomescreenApp() {
             onOpenSettings={() => setView('settings')}
             folderToOpen={folderToOpen}
             clearFolderToOpen={() => setFolderToOpen(null)}
+            activeTag={activeTag}
+            setActiveTag={setActiveTag}
           />
-          <PageIndicator
-            pages={data.pages}
-            currentPage={currentPage}
-            onNavigate={setCurrentPage}
-            onAddPage={addPage}
-            onDeletePage={deletePage}
-            editMode={editMode}
-          />
+          {/* A filtered view spans every page, so page dots mean nothing */}
+          {!activeTag && (
+            <PageIndicator
+              pages={data.pages}
+              currentPage={currentPage}
+              onNavigate={setCurrentPage}
+              onAddPage={addPage}
+              onDeletePage={deletePage}
+              editMode={editMode}
+            />
+          )}
         </div>
 
         <div className="app-settings">

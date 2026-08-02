@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -23,6 +23,8 @@ import FolderIcon from '../FolderIcon/FolderIcon.jsx'
 import FolderOverlay from '../FolderOverlay/FolderOverlay.jsx'
 import AddBookmarkModal from '../AddBookmarkModal/AddBookmarkModal.jsx'
 import AppInfoModal from '../AppInfoModal/AppInfoModal.jsx'
+import TagFilterBar from '../TagFilterBar/TagFilterBar.jsx'
+import { allTags, flattenBookmarks, hasTag, compareByName } from '../../utils/tags.js'
 import './HomeScreen.css'
 
 // Sortable wrapper for each grid item
@@ -75,6 +77,8 @@ export default function HomeScreen({
   onOpenSettings,
   folderToOpen,
   clearFolderToOpen,
+  activeTag,
+  setActiveTag,
 }) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [activeFolder, setActiveFolder] = useState(null)
@@ -92,6 +96,27 @@ export default function HomeScreen({
   const page = data.pages[currentPage]
   const items = page ? page.items : []
   const pageId = page ? page.id : null
+
+  // Tag filtering. While a tag is active the view flattens: every matching
+  // app across all pages and out of its folder, alphabetical. Ordering is
+  // derived, so drag-to-reorder and paging are switched off below.
+  const tagList = useMemo(() => allTags(data), [data])
+  const filtering = Boolean(activeTag)
+
+  const filteredItems = useMemo(() => {
+    if (!filtering) return []
+    return flattenBookmarks(data)
+      .filter(({ item }) => hasTag(item, activeTag))
+      .map(({ item }) => item)
+      .sort(compareByName)
+  }, [filtering, data, activeTag])
+
+  const displayItems = filtering ? filteredItems : items
+
+  // A tag can disappear (last app untagged or deleted) while it's selected
+  useEffect(() => {
+    if (activeTag && !tagList.some((t) => t.tag === activeTag)) setActiveTag(null)
+  }, [activeTag, tagList, setActiveTag])
 
   // Open folder triggered from search
   useEffect(() => {
@@ -115,8 +140,9 @@ export default function HomeScreen({
     }
   }, [data, currentPage, activeFolder])
 
-  // Keyboard navigation for pages
+  // Keyboard navigation for pages (pages aren't an axis while filtering)
   useEffect(() => {
+    if (filtering) return
     const handler = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -128,7 +154,7 @@ export default function HomeScreen({
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [data.pages.length, setCurrentPage])
+  }, [filtering, data.pages.length, setCurrentPage])
 
   // Touch swipe for page navigation
   const handleTouchStart = useCallback((e) => {
@@ -137,6 +163,7 @@ export default function HomeScreen({
   }, [])
 
   const handleTouchEnd = useCallback((e) => {
+    if (filtering) return
     if (touchStartX.current === null) return
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
@@ -146,7 +173,7 @@ export default function HomeScreen({
     }
     touchStartX.current = null
     touchStartY.current = null
-  }, [data.pages.length, setCurrentPage])
+  }, [filtering, data.pages.length, setCurrentPage])
 
   // Auto-scroll pages when dragging to the edge
   useEffect(() => {
@@ -251,13 +278,19 @@ export default function HomeScreen({
   }, [items, page, pageId, moveItem, addToFolder, reorderItems])
 
   const handleDeleteItem = useCallback((itemId) => {
-    const item = items.find((i) => i.id === itemId)
+    const item = displayItems.find((i) => i.id === itemId)
     if (item?.subUrls?.length > 0) {
       setConfirmDelete({ itemId, name: item.name, count: item.subUrls.length })
       return
     }
     deleteItem(itemId, pageId)
-  }, [deleteItem, pageId, items])
+  }, [deleteItem, pageId, displayItems])
+
+  // Adding while filtered would otherwise drop the new app straight out of
+  // the visible list, so it inherits the active tag
+  const handleAddBookmark = useCallback((url, name) => {
+    addBookmark(url, name, activeTag ? [activeTag] : [])
+  }, [addBookmark, activeTag])
 
   const handleConfirmDelete = useCallback(() => {
     if (confirmDelete) deleteItem(confirmDelete.itemId, pageId)
@@ -303,6 +336,9 @@ export default function HomeScreen({
 
   const activeDragItem = activeDragId ? items.find((i) => i.id === activeDragId) : null
 
+  // The chip row is absolutely positioned, so the grid pads down to clear it
+  const gridClassName = `homescreen-grid${tagList.length > 0 ? ' homescreen-grid--with-tags' : ''}`
+
   return (
     <div
       className="homescreen"
@@ -330,10 +366,12 @@ export default function HomeScreen({
         </div>
       </div>
 
+      {/* Tag filter chips */}
+      <TagFilterBar tags={tagList} activeTag={activeTag} onSelect={setActiveTag} />
 
       {/* Grid */}
       <div className={`homescreen-grid-area${activeDragId ? ' is-dragging' : ''}`}>
-        {currentPage > 0 && (
+        {!filtering && currentPage > 0 && (
           <div className="page-nav-zone page-nav-zone--left">
             <button
               className="page-nav-btn"
@@ -344,7 +382,7 @@ export default function HomeScreen({
             </button>
           </div>
         )}
-        {currentPage < data.pages.length - 1 && (
+        {!filtering && currentPage < data.pages.length - 1 && (
           <div className="page-nav-zone page-nav-zone--right">
             <button
               className="page-nav-btn"
@@ -355,75 +393,104 @@ export default function HomeScreen({
             </button>
           </div>
         )}
-        {items.length === 0 && (
+        {displayItems.length === 0 && (
           <div className="homescreen-empty-hint">
-            <div style={{ fontSize: 48 }}>🔖</div>
-            <p>No bookmarks yet</p>
-            <p>Tap + to add your first bookmark</p>
+            {filtering ? (
+              <>
+                <div style={{ fontSize: 48 }}>🏷️</div>
+                <p>No apps tagged “{activeTag}”</p>
+                <p>Tap + to add one, or pick another tag</p>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 48 }}>🔖</div>
+                <p>No bookmarks yet</p>
+                <p>Tap + to add your first bookmark</p>
+              </>
+            )}
           </div>
         )}
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={collisionDetection}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={items.map((i) => i.id)} strategy={sortStrategy}>
-            <div className="homescreen-grid">
-              {items.map((item) => {
-                const isOverFolder = overId === item.id && item.type === 'folder' && activeDragId !== item.id
-                return (
-                  <SortableItem key={item.id} id={item.id} isOverFolder={isOverFolder}>
-                    {item.type === 'bookmark' ? (
-                      <AppIcon
-                        item={item}
-                        editMode={editMode}
-                        onDelete={handleDeleteItem}
-                        onRename={handleRenameItem}
-                        onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
-                        onInfoOpen={() => handleOpenAppInfo(item)}
-                      />
-                    ) : (
-                      <FolderIcon
-                        item={item}
-                        editMode={editMode}
-                        onDelete={handleDeleteItem}
-                        onRename={handleRenameItem}
-                        onClick={handleOpenFolder}
-                      />
-                    )}
-                  </SortableItem>
-                )
-              })}
-            </div>
-          </SortableContext>
-
-          <DragOverlay>
-            {activeDragItem ? (
-              <div className="dnd-drag-overlay">
-                {activeDragItem.type === 'bookmark' ? (
-                  <AppIcon
-                    item={activeDragItem}
-                    editMode={false}
-                    onDelete={() => {}}
-                    onRename={() => {}}
-                    onOpen={() => {}}
-                  />
-                ) : (
-                  <FolderIcon
-                    item={activeDragItem}
-                    editMode={false}
-                    onDelete={() => {}}
-                    onRename={() => {}}
-                    onClick={() => {}}
-                  />
-                )}
+        {filtering ? (
+          // Alphabetical, folder-flattened: order is derived, so there is
+          // nothing meaningful to drag against — no DnD here
+          <div className={gridClassName}>
+            {displayItems.map((item) => (
+              <div key={item.id} className="sortable-item">
+                <AppIcon
+                  item={item}
+                  editMode={editMode}
+                  onDelete={handleDeleteItem}
+                  onRename={handleRenameItem}
+                  onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+                  onInfoOpen={() => handleOpenAppInfo(item)}
+                />
               </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+            ))}
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={collisionDetection}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={items.map((i) => i.id)} strategy={sortStrategy}>
+              <div className={gridClassName}>
+                {items.map((item) => {
+                  const isOverFolder = overId === item.id && item.type === 'folder' && activeDragId !== item.id
+                  return (
+                    <SortableItem key={item.id} id={item.id} isOverFolder={isOverFolder}>
+                      {item.type === 'bookmark' ? (
+                        <AppIcon
+                          item={item}
+                          editMode={editMode}
+                          onDelete={handleDeleteItem}
+                          onRename={handleRenameItem}
+                          onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+                          onInfoOpen={() => handleOpenAppInfo(item)}
+                        />
+                      ) : (
+                        <FolderIcon
+                          item={item}
+                          editMode={editMode}
+                          onDelete={handleDeleteItem}
+                          onRename={handleRenameItem}
+                          onClick={handleOpenFolder}
+                        />
+                      )}
+                    </SortableItem>
+                  )
+                })}
+              </div>
+            </SortableContext>
+
+            <DragOverlay>
+              {activeDragItem ? (
+                <div className="dnd-drag-overlay">
+                  {activeDragItem.type === 'bookmark' ? (
+                    <AppIcon
+                      item={activeDragItem}
+                      editMode={false}
+                      onDelete={() => {}}
+                      onRename={() => {}}
+                      onOpen={() => {}}
+                    />
+                  ) : (
+                    <FolderIcon
+                      item={activeDragItem}
+                      editMode={false}
+                      onDelete={() => {}}
+                      onRename={() => {}}
+                      onClick={() => {}}
+                    />
+                  )}
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        )}
       </div>
 
       {/* FAB */}
@@ -440,7 +507,7 @@ export default function HomeScreen({
       {showAddModal && (
         <AddBookmarkModal
           onClose={() => setShowAddModal(false)}
-          onAddBookmark={addBookmark}
+          onAddBookmark={handleAddBookmark}
           onAddFolder={addFolder}
         />
       )}
@@ -468,6 +535,7 @@ export default function HomeScreen({
           onClose={() => setAppInfoItem(null)}
           onSave={handleSaveAppInfo}
           onDelete={handleDeleteAppInfo}
+          tagSuggestions={tagList}
         />
       )}
 

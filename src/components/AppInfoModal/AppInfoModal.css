@@ -234,6 +234,18 @@
 }
 
 /* Sub pages section */
+.app-info-tag-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.app-info-tag-section .app-info-suburl-empty {
+  text-align: left;
+  padding: 0;
+}
+
 .app-info-suburl-section {
   display: flex;
   flex-direction: column;
