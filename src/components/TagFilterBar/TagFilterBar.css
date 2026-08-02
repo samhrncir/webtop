@@ -1,0 +1,61 @@
+/* Sits under the (absolutely positioned) homescreen toolbar; the grid
+   gets extra top padding via .homescreen-grid--with-tags to clear it */
+.tag-filter-bar {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  z-index: 29;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.tag-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.tag-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-family: inherit;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.tag-filter-chip:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.tag-filter-chip.active {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: #a78bfa;
+}
+
+.tag-filter-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.tag-filter-chip.active .tag-filter-count {
+  color: inherit;
+  opacity: 0.75;
+}
