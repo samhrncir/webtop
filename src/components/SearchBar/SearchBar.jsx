@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import './SearchBar.css'
 
@@ -25,10 +25,13 @@ function ResultIcon({ item }) {
 
 export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
   const [query, setQuery] = useState('')
+  const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
+  const itemRefs = useRef([])
 
   const handleClear = () => {
     setQuery('')
+    setActiveIndex(0)
     inputRef.current?.focus()
   }
 
@@ -70,7 +73,33 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
       onNavigateToPage?.(result.pageIdx)
     }
     setQuery('')
+    setActiveIndex(0)
   }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      handleClear()
+      return
+    }
+    if (e.key === 'Enter') {
+      const result = allResults[activeIndex]
+      if (result) handleResultClick(result)
+      return
+    }
+    if (allResults.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex((i) => (i + 1) % allResults.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex((i) => (i - 1 + allResults.length) % allResults.length)
+    }
+  }
+
+  // Keep the active row visible inside the scrolling overlay
+  useEffect(() => {
+    itemRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' })
+  }, [activeIndex])
 
   const showOverlay = query.trim().length > 0
 
@@ -84,7 +113,17 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
           type="text"
           placeholder="Search bookmarks..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setActiveIndex(0)
+          }}
+          onKeyDown={handleKeyDown}
+          role="combobox"
+          aria-expanded={showOverlay}
+          aria-controls="search-results-listbox"
+          aria-activedescendant={
+            showOverlay && allResults[activeIndex] ? `search-result-${activeIndex}` : undefined
+          }
         />
         {query && (
           <button className="search-bar-clear" onClick={handleClear} aria-label="Clear search">
@@ -94,15 +133,20 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
       </div>
 
       {showOverlay && (
-        <div className="search-results-overlay">
+        <div className="search-results-overlay" id="search-results-listbox" role="listbox">
           {allResults.length === 0 ? (
             <div className="search-no-results">No bookmarks found</div>
           ) : (
             allResults.map((result, idx) => (
               <div
                 key={idx}
-                className="search-result-item"
+                id={`search-result-${idx}`}
+                ref={(el) => (itemRefs.current[idx] = el)}
+                className={`search-result-item${idx === activeIndex ? ' is-active' : ''}`}
+                role="option"
+                aria-selected={idx === activeIndex}
                 onClick={() => handleResultClick(result)}
+                onMouseEnter={() => setActiveIndex(idx)}
               >
                 <ResultIcon item={result.item} />
                 <div className="search-result-info">

@@ -92,7 +92,8 @@
   transition: background 0.15s;
 }
 
-.search-result-item:hover {
+.search-result-item:hover,
+.search-result-item.is-active {
   background: var(--accent-light);
 }
 
