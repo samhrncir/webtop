@@ -260,13 +260,13 @@ export function useHomescreen() {
     setEditMode((prev) => !prev)
   }, [])
 
-  const addBookmark = useCallback((url, name) => {
+  const addBookmark = useCallback((url, name, tags = []) => {
     const page = livePages(rowsRef.current)[currentPage]
     if (!page) return
     applyRowChanges({
       items: [{
         id: crypto.randomUUID(), page_id: page.id, folder_id: null, type: 'bookmark',
-        content: { name, url },
+        content: { name, url, tags },
         position: endPosition(liveTopItems(rowsRef.current, page.id)),
         deleted_at: null, updated_at: nowIso(),
       }],
