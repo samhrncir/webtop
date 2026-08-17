@@ -79,6 +79,11 @@
   }
 }
 
+/* Extra clearance for the tag chip row under the toolbar */
+.homescreen-grid--with-tags {
+  padding-top: 88px;
+}
+
 /* DnD overlay style */
 .dnd-drag-overlay {
   opacity: 0.85;

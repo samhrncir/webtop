@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { flattenBookmarks, getTags, hasTag, itemMatchesQuery } from '../../utils/tags.js'
 import './SearchBar.css'
 
 function ResultIcon({ item }) {
@@ -23,43 +24,29 @@ function ResultIcon({ item }) {
   )
 }
 
-export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
+export default function SearchBar({ data, onNavigateToPage, onOpenFolder, activeTag = null }) {
   const [query, setQuery] = useState('')
+  const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
+  const itemRefs = useRef([])
 
   const handleClear = () => {
     setQuery('')
+    setActiveIndex(0)
     inputRef.current?.focus()
   }
 
-  // Gather all searchable items across all pages
+  // Gather all searchable items across all pages. Bookmarks match on name,
+  // url or tag; folders on name only. A tag filter narrows results to that
+  // tag, which means folders drop out entirely — they can't be tagged.
   const allResults = React.useMemo(() => {
     if (!query.trim()) return []
     const q = query.trim().toLowerCase()
-    const results = []
 
-    data.pages.forEach((page, pageIdx) => {
-      page.items.forEach((item) => {
-        const nameMatch = item.name.toLowerCase().includes(q)
-        const urlMatch = item.type === 'bookmark' && item.url.toLowerCase().includes(q)
-        if (nameMatch || urlMatch) {
-          results.push({ item, pageIdx })
-        }
-        // Search inside folders too
-        if (item.type === 'folder') {
-          item.items.forEach((bm) => {
-            const bmNameMatch = bm.name.toLowerCase().includes(q)
-            const bmUrlMatch = bm.url.toLowerCase().includes(q)
-            if (bmNameMatch || bmUrlMatch) {
-              results.push({ item: bm, pageIdx, inFolder: item.name })
-            }
-          })
-        }
-      })
-    })
-
-    return results
-  }, [query, data])
+    return flattenBookmarks(data, { includeFolders: !activeTag })
+      .filter(({ item }) => itemMatchesQuery(item, q))
+      .filter(({ item }) => !activeTag || hasTag(item, activeTag))
+  }, [query, data, activeTag])
 
   const handleResultClick = (result) => {
     if (result.item.type === 'folder') {
@@ -70,7 +57,33 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
       onNavigateToPage?.(result.pageIdx)
     }
     setQuery('')
+    setActiveIndex(0)
   }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      handleClear()
+      return
+    }
+    if (e.key === 'Enter') {
+      const result = allResults[activeIndex]
+      if (result) handleResultClick(result)
+      return
+    }
+    if (allResults.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex((i) => (i + 1) % allResults.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex((i) => (i - 1 + allResults.length) % allResults.length)
+    }
+  }
+
+  // Keep the active row visible inside the scrolling overlay
+  useEffect(() => {
+    itemRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' })
+  }, [activeIndex])
 
   const showOverlay = query.trim().length > 0
 
@@ -82,9 +95,19 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
           ref={inputRef}
           className="search-bar-input"
           type="text"
-          placeholder="Search bookmarks..."
+          placeholder={activeTag ? `Search #${activeTag}...` : 'Search bookmarks...'}
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            setActiveIndex(0)
+          }}
+          onKeyDown={handleKeyDown}
+          role="combobox"
+          aria-expanded={showOverlay}
+          aria-controls="search-results-listbox"
+          aria-activedescendant={
+            showOverlay && allResults[activeIndex] ? `search-result-${activeIndex}` : undefined
+          }
         />
         {query && (
           <button className="search-bar-clear" onClick={handleClear} aria-label="Clear search">
@@ -94,15 +117,22 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
       </div>
 
       {showOverlay && (
-        <div className="search-results-overlay">
+        <div className="search-results-overlay" id="search-results-listbox" role="listbox">
           {allResults.length === 0 ? (
-            <div className="search-no-results">No bookmarks found</div>
+            <div className="search-no-results">
+              {activeTag ? `No bookmarks tagged “${activeTag}” found` : 'No bookmarks found'}
+            </div>
           ) : (
             allResults.map((result, idx) => (
               <div
                 key={idx}
-                className="search-result-item"
+                id={`search-result-${idx}`}
+                ref={(el) => (itemRefs.current[idx] = el)}
+                className={`search-result-item${idx === activeIndex ? ' is-active' : ''}`}
+                role="option"
+                aria-selected={idx === activeIndex}
                 onClick={() => handleResultClick(result)}
+                onMouseEnter={() => setActiveIndex(idx)}
               >
                 <ResultIcon item={result.item} />
                 <div className="search-result-info">
@@ -112,6 +142,13 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder }) {
                   )}
                   {result.inFolder && (
                     <span className="search-result-url">in {result.inFolder}</span>
+                  )}
+                  {getTags(result.item).length > 0 && (
+                    <span className="search-result-tags">
+                      {getTags(result.item).map((tag) => (
+                        <span key={tag} className="search-result-tag">{tag}</span>
+                      ))}
+                    </span>
                   )}
                 </div>
                 <span className="search-result-page-badge">

@@ -1,0 +1,84 @@
+.tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border-focus);
+  border-radius: 10px;
+  padding: 7px 10px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.tag-input:focus-within {
+  border-color: var(--accent-border);
+  background: var(--surface-hover);
+}
+
+.tag-input-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 4px 3px 10px;
+  line-height: 1.4;
+}
+
+.tag-input-pill-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 50%;
+  transition: color 0.15s;
+  font-family: inherit;
+}
+
+.tag-input-pill-remove:hover {
+  color: var(--text-primary);
+}
+
+.tag-input-field {
+  flex: 1;
+  min-width: 90px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  caret-color: var(--accent);
+  padding: 2px 0;
+}
+
+.tag-input-field::placeholder {
+  color: var(--text-muted);
+}
+
+/* Read-only pill row, used in the App Info view mode */
+.tag-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  line-height: 1.4;
+}
