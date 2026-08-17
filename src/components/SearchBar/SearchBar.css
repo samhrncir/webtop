@@ -92,7 +92,8 @@
   transition: background 0.15s;
 }
 
-.search-result-item:hover {
+.search-result-item:hover,
+.search-result-item.is-active {
   background: var(--accent-light);
 }
 
@@ -138,6 +139,25 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.search-result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.search-result-tag {
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 
 .search-result-page-badge {

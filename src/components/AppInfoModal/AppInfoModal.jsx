@@ -17,6 +17,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { getInitialLetter, getColorForName, isSafeIconUrl } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
+import { getTags, normalizeTagList } from '../../utils/tags.js'
+import TagInput from '../TagInput/TagInput.jsx'
 import './AppInfoModal.css'
 
 function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
@@ -61,11 +63,12 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSuggestions = [] }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
+  const [tags, setTags] = useState(() => getTags(item))
   const [editMode, setEditMode] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newSubName, setNewSubName] = useState('')
@@ -95,6 +98,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
     setUrl(item.url)
     setIcon(item.icon || '')
     setSubUrls(item.subUrls || [])
+    setTags(getTags(item))
     setEditMode(false)
     setShowAddForm(false)
     setNewSubName('')
@@ -107,10 +111,13 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
       url: url.trim() || item.url,
       icon: icon.trim() || null,
       subUrls,
+      // Always sent, even when empty — updateBookmark merges into content,
+      // so clearing every tag has to write [] rather than drop the key
+      tags: normalizeTagList(tags),
     })
     setEditMode(false)
     onClose()
-  }, [name, url, icon, subUrls, item, onSave, onClose])
+  }, [name, url, icon, subUrls, tags, item, onSave, onClose])
 
   const handleDelete = useCallback(() => {
     if (window.confirm(`Delete "${item.name}"?`)) {
@@ -233,6 +240,21 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete }) {
               </>
             )}
           </div>
+        </div>
+
+        <div className="app-info-tag-section">
+          <span className="app-info-suburl-title">Tags</span>
+          {editMode ? (
+            <TagInput tags={tags} onChange={setTags} suggestions={tagSuggestions} />
+          ) : tags.length > 0 ? (
+            <div className="tag-pill-row">
+              {tags.map((tag) => (
+                <span key={tag} className="tag-pill">{tag}</span>
+              ))}
+            </div>
+          ) : (
+            <p className="app-info-suburl-empty">No tags.</p>
+          )}
         </div>
 
         <div className="app-info-suburl-section">
