@@ -16,7 +16,8 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import './Taskbar.css'
 
@@ -34,10 +35,9 @@ function targetUrl(item) {
 }
 
 function Favicon({ item, className }) {
-  const [imgError, setImgError] = useState(false)
-  const faviconUrl = getFaviconUrl(item.url)
+  const { src: iconSrc, onError: onIconError } = useIconSource(item)
 
-  if (imgError || !faviconUrl) {
+  if (!iconSrc) {
     return (
       <div
         className={`${className} taskbar-icon-letter`}
@@ -50,9 +50,9 @@ function Favicon({ item, className }) {
   return (
     <img
       className={className}
-      src={faviconUrl}
+      src={iconSrc}
       alt={item.name}
-      onError={() => setImgError(true)}
+      onError={onIconError}
       draggable={false}
     />
   )

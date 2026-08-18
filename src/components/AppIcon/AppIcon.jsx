@@ -1,15 +1,15 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { getFaviconUrl, getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import './AppIcon.css'
 
 export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, onInfoOpen }) {
-  const [imgError, setImgError] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(item.name)
   const clickTimer = useRef(null)
 
-  const faviconUrl = getFaviconUrl(item.url)
+  const { src: iconSrc, onError: onIconError } = useIconSource(item)
   const letter = getInitialLetter(item.name)
   const bgColor = getColorForName(item.name)
   const hasSubUrls = item.subUrls?.length > 0
@@ -88,12 +88,12 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
             &times;
           </button>
         )}
-        {!imgError && faviconUrl ? (
+        {iconSrc ? (
           <img
             className="app-icon-favicon"
-            src={faviconUrl}
+            src={iconSrc}
             alt={item.name}
-            onError={() => setImgError(true)}
+            onError={onIconError}
             draggable={false}
           />
         ) : (

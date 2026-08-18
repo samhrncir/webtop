@@ -8,6 +8,27 @@ export function getFaviconUrl(url) {
   }
 }
 
+export function isSafeIconUrl(str) {
+  if (typeof str !== 'string') return false
+  if (/^data:image\//i.test(str)) return true
+  try {
+    const parsed = new URL(str)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+// Ordered fallback chain for an item: custom icon -> favicon -> (none, caller shows letter)
+export function getIconCandidates(item) {
+  const out = []
+  const custom = typeof item?.icon === 'string' ? item.icon.trim() : ''
+  if (custom && isSafeIconUrl(custom)) out.push(custom)
+  const favicon = item?.url ? getFaviconUrl(item.url) : null
+  if (favicon) out.push(favicon)
+  return out
+}
+
 export function getInitialLetter(name) {
   if (!name || name.trim().length === 0) return '?'
   return name.trim()[0].toUpperCase()
