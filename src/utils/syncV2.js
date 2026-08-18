@@ -192,14 +192,6 @@ export function mergeRows(localRows, serverRows, opts = {}) {
   return { pages, items }
 }
 
-// Tombstones the server has confirmed don't need to live on locally
-export function pruneTombstones(rows, dirty) {
-  return {
-    pages: rows.pages.filter((p) => !p.deleted_at || dirty.pages.has(p.id)),
-    items: rows.items.filter((i) => !i.deleted_at || dirty.items.has(i.id)),
-  }
-}
-
 // The UI needs at least one live page to add bookmarks to
 export function ensureLivePage(rows) {
   if (rows.pages.some((p) => !p.deleted_at)) return rows
