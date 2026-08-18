@@ -16,7 +16,14 @@ function locationLabel(item) {
 }
 
 function RowIcon({ item }) {
-  const { src: iconSrc, onError: onIconError } = useIconSource(item)
+  const { src: iconSrc, onError: onIconError, emoji } = useIconSource(item)
+  if (emoji) {
+    return (
+      <div className="hidden-bm-icon hidden-bm-icon--emoji" role="img" aria-label={item.name}>
+        {emoji}
+      </div>
+    )
+  }
   if (!iconSrc) {
     return (
       <div className="hidden-bm-icon hidden-bm-icon--letter" style={{ background: getColorForName(item.name) }}>

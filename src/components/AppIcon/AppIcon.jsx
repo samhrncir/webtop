@@ -9,7 +9,7 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
   const [renameValue, setRenameValue] = useState(item.name)
   const clickTimer = useRef(null)
 
-  const { src: iconSrc, onError: onIconError } = useIconSource(item)
+  const { src: iconSrc, onError: onIconError, emoji } = useIconSource(item)
   const letter = getInitialLetter(item.name)
   const bgColor = getColorForName(item.name)
   const hasSubUrls = item.subUrls?.length > 0
@@ -88,7 +88,11 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
             &times;
           </button>
         )}
-        {iconSrc ? (
+        {emoji ? (
+          <div className="app-icon-emoji" role="img" aria-label={item.name}>
+            {emoji}
+          </div>
+        ) : iconSrc ? (
           <img
             className="app-icon-favicon"
             src={iconSrc}

@@ -14,13 +14,22 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getInitialLetter, getColorForName, isSafeIconUrl } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName, isSafeIconUrl, normalizeEmoji } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import { normalizeAliases } from '../../utils/aliases.js'
 import { getTags, normalizeTagList } from '../../utils/tags.js'
 import TagInput from '../TagInput/TagInput.jsx'
 import './AppInfoModal.css'
+
+// Quick picks for the emoji icon field; anything else can be typed (or pasted)
+// straight into the input, including via the OS emoji picker (Win+. / Ctrl+Cmd+Space)
+const EMOJI_PRESETS = [
+  '🏠', '⭐', '❤️', '🔥', '✅', '📌', '📁', '📝',
+  '📅', '📧', '💬', '🎵', '🎬', '🎮', '📷', '🛒',
+  '💰', '📈', '🧠', '🤖', '💻', '🌐', '🔧', '🔒',
+  '☁️', '🚀', '✈️', '🍕', '☕', '🎨', '📚', '🏋️',
+]
 
 function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sub.id })
@@ -68,6 +77,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
+  const [emoji, setEmoji] = useState(item.emoji || '')
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
   const [aliases, setAliases] = useState(() => normalizeAliases(item.aliases))
   const [newAlias, setNewAlias] = useState('')
@@ -77,11 +87,12 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
   const [newSubName, setNewSubName] = useState('')
   const [newSubUrl, setNewSubUrl] = useState('')
 
-  // Preview the draft values so a typed icon URL updates live while editing
-  const { src: iconSrc, onError: onIconError } = useIconSource({ icon, url })
+  // Preview the draft values so a typed icon URL or emoji updates live while editing
+  const { src: iconSrc, onError: onIconError, emoji: previewEmoji } = useIconSource({ icon, url, emoji })
   const letter = getInitialLetter(item.name)
   const bgColor = getColorForName(item.name)
   const iconInvalid = icon.trim().length > 0 && !isSafeIconUrl(icon.trim())
+  const emojiInvalid = emoji.trim().length > 0 && !normalizeEmoji(emoji)
 
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose() }
@@ -100,6 +111,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
     setName(item.name)
     setUrl(item.url)
     setIcon(item.icon || '')
+    setEmoji(item.emoji || '')
     setSubUrls(item.subUrls || [])
     setAliases(normalizeAliases(item.aliases))
     setNewAlias('')
@@ -115,6 +127,9 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
       name: name.trim() || item.name,
       url: url.trim() || item.url,
       icon: icon.trim() || null,
+      // Emoji is stored beside the icon URL, not instead of it, so clearing
+      // it falls back to whatever image icon the bookmark already had
+      emoji: normalizeEmoji(emoji) || null,
       subUrls,
       // Both always sent, even when empty — updateBookmark merges into
       // content, so clearing every entry has to write [] rather than drop
@@ -124,7 +139,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
     })
     setEditMode(false)
     onClose()
-  }, [name, url, icon, subUrls, aliases, tags, item, onSave, onClose])
+  }, [name, url, icon, emoji, subUrls, aliases, tags, item, onSave, onClose])
 
   const handleDelete = useCallback(() => {
     if (window.confirm(`Delete "${item.name}"?`)) {
@@ -199,7 +214,11 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
 
         <div className="app-info-identity">
           <div className="app-info-favicon-wrap">
-            {iconSrc ? (
+            {previewEmoji ? (
+              <div className="app-info-favicon-emoji" role="img" aria-label={item.name}>
+                {previewEmoji}
+              </div>
+            ) : iconSrc ? (
               <img
                 src={iconSrc}
                 alt={item.name}
@@ -241,6 +260,46 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                   {iconInvalid
                     ? 'Icon URL must start with http:// or https://'
                     : "Leave blank to use the site's favicon."}
+                </p>
+                <div className="app-info-emoji-row">
+                  <input
+                    className="app-info-input app-info-emoji-input"
+                    value={emoji}
+                    onChange={(e) => setEmoji(e.target.value)}
+                    placeholder="🙂"
+                    aria-label="Emoji icon"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <span className="app-info-emoji-label">Emoji icon</span>
+                  {emoji && (
+                    <button
+                      type="button"
+                      className="app-info-emoji-clear"
+                      onClick={() => setEmoji('')}
+                    >
+                      Use image icon
+                    </button>
+                  )}
+                </div>
+                <div className="app-info-emoji-presets" role="listbox" aria-label="Emoji presets">
+                  {EMOJI_PRESETS.map((e) => (
+                    <button
+                      type="button"
+                      key={e}
+                      className={`app-info-emoji-preset${emoji === e ? ' selected' : ''}`}
+                      onClick={() => setEmoji(emoji === e ? '' : e)}
+                      aria-label={e}
+                      aria-selected={emoji === e}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+                <p className={`app-info-url-hint${emojiInvalid ? ' app-info-url-hint--error' : ''}`}>
+                  {emojiInvalid
+                    ? 'Enter a single emoji.'
+                    : 'An emoji replaces the image icon. Clear it to go back to the icon URL or favicon.'}
                 </p>
               </>
             ) : (

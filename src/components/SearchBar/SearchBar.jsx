@@ -6,7 +6,7 @@ import { flattenBookmarks, getTags, hasTag, itemMatchesQuery } from '../../utils
 import './SearchBar.css'
 
 function ResultIcon({ item }) {
-  const { src: iconSrc, onError: onIconError } = useIconSource(item)
+  const { src: iconSrc, onError: onIconError, emoji } = useIconSource(item)
   const bg = getColorForName(item.name)
   const letter = getInitialLetter(item.name)
 
@@ -14,6 +14,14 @@ function ResultIcon({ item }) {
     return (
       <div className="search-result-icon" style={{ background: bg }}>
         {item.type === 'folder' ? '📁' : letter}
+      </div>
+    )
+  }
+
+  if (emoji) {
+    return (
+      <div className="search-result-icon search-result-icon--emoji" role="img" aria-label={item.name}>
+        {emoji}
       </div>
     )
   }

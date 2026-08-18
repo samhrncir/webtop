@@ -56,7 +56,7 @@ export default function SettingsPage({
   visibleBookmarks = [],
   setHidden,
 }) {
-  const { theme, toggleTheme } = useTheme()
+  const { theme, preference, setPreference } = useTheme()
   const { settings, setSetting } = useSettings()
   const fileInputRef = useRef(null)
   // null = settings root; 'hidden' = the Hidden Bookmarks sub-page
@@ -110,15 +110,20 @@ export default function SettingsPage({
             <div className="settings-card">
               <SettingsRow
                 label="Color Mode"
-                description="Choose your preferred theme"
+                description={
+                  preference === 'system'
+                    ? `Following your device setting (currently ${theme})`
+                    : 'Choose your preferred theme'
+                }
               >
                 <SegmentedControl
                   options={[
+                    { label: '🖥️ System', value: 'system' },
                     { label: '☀️ Light', value: 'light' },
                     { label: '🌙 Dark', value: 'dark' },
                   ]}
-                  value={theme}
-                  onChange={(val) => val !== theme && toggleTheme()}
+                  value={preference}
+                  onChange={setPreference}
                 />
               </SettingsRow>
 

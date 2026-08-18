@@ -19,6 +19,34 @@ export function isSafeIconUrl(str) {
   }
 }
 
+// A single emoji grapheme (pictograph, keycap or flag). Anything else, or
+// more than one grapheme, is rejected so a stray letter can't hijack the tile.
+const EMOJI_GRAPHEME = /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|[0-9#*]️?⃣)/u
+
+function firstGrapheme(str) {
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+    for (const { segment } of seg.segment(str)) return segment
+    return ''
+  }
+  return Array.from(str)[0] || ''
+}
+
+// Returns the normalized emoji for `str`, or '' when it isn't a single emoji.
+export function normalizeEmoji(str) {
+  if (typeof str !== 'string') return ''
+  const trimmed = str.trim()
+  if (!trimmed) return ''
+  const first = firstGrapheme(trimmed)
+  if (first !== trimmed) return ''
+  return EMOJI_GRAPHEME.test(first) ? first : ''
+}
+
+// The emoji an item wants drawn in place of its image icon, or null.
+export function getItemEmoji(item) {
+  return normalizeEmoji(item?.emoji) || null
+}
+
 // Ordered fallback chain for an item: custom icon -> favicon -> (none, caller shows letter)
 export function getIconCandidates(item) {
   const out = []
