@@ -48,7 +48,7 @@ function Toggle({ value, onChange }) {
 }
 
 export default function SettingsPage({ onBack, importData, exportData }) {
-  const { theme, toggleTheme } = useTheme()
+  const { theme, preference, setPreference } = useTheme()
   const { settings, setSetting } = useSettings()
   const fileInputRef = useRef(null)
 
@@ -84,15 +84,20 @@ export default function SettingsPage({ onBack, importData, exportData }) {
           <div className="settings-card">
             <SettingsRow
               label="Color Mode"
-              description="Choose your preferred theme"
+              description={
+                preference === 'system'
+                  ? `Following your device setting (currently ${theme})`
+                  : 'Choose your preferred theme'
+              }
             >
               <SegmentedControl
                 options={[
+                  { label: '🖥️ System', value: 'system' },
                   { label: '☀️ Light', value: 'light' },
                   { label: '🌙 Dark', value: 'dark' },
                 ]}
-                value={theme}
-                onChange={(val) => val !== theme && toggleTheme()}
+                value={preference}
+                onChange={setPreference}
               />
             </SettingsRow>
 
