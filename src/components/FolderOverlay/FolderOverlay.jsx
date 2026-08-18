@@ -17,7 +17,7 @@ import { CSS } from '@dnd-kit/utilities'
 import AppIcon from '../AppIcon/AppIcon.jsx'
 import './FolderOverlay.css'
 
-function SortableBookmark({ bookmark, editMode, onDelete, onOpen, frozen }) {
+function SortableBookmark({ bookmark, editMode, onDelete, onOpen, onInfoOpen, frozen }) {
   const {
     attributes,
     listeners,
@@ -41,6 +41,7 @@ function SortableBookmark({ bookmark, editMode, onDelete, onOpen, frozen }) {
         editMode={editMode}
         onDelete={onDelete}
         onOpen={onOpen}
+        onInfoOpen={onInfoOpen}
         onRename={() => {}}
         onLongPress={() => {}}
       />
@@ -53,10 +54,12 @@ export default function FolderOverlay({
   editMode,
   onClose,
   onOpenBookmark,
+  onOpenAppInfo,
   onDeleteFromFolder,
   onRenameFolder,
   onEjectFromFolder,
   onReorderFolderItems,
+  appInfoOpen,
 }) {
   const [renamingFolder, setRenamingFolder] = useState(false)
   const [folderName, setFolderName] = useState(folder.name)
@@ -69,8 +72,9 @@ export default function FolderOverlay({
   useEffect(() => { setFolderName(folder.name) }, [folder.name])
 
   const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Escape') onClose()
-  }, [onClose])
+    // App Info stacks above the folder and handles Escape itself
+    if (e.key === 'Escape' && !appInfoOpen) onClose()
+  }, [onClose, appInfoOpen])
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
@@ -198,6 +202,7 @@ export default function FolderOverlay({
                     editMode={editMode}
                     frozen={pointerOutside}
                     onOpen={(url) => onOpenBookmark?.(url)}
+                    onInfoOpen={() => onOpenAppInfo?.(bm)}
                     onDelete={() => onDeleteFromFolder?.(bm.id, folder.id)}
                   />
                 ))}
