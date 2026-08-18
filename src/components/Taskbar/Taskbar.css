@@ -1,0 +1,177 @@
+/* Centre-justified pill that grows symmetrically, Windows 11 style */
+.taskbar-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 0 16px 10px;
+  flex-shrink: 0;
+}
+
+.taskbar-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 720px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--bottom-bar-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  transition: background 0.25s;
+}
+
+/* ── Icons ───────────────────────────────────────────────────── */
+.taskbar-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.taskbar-icon:hover {
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+.taskbar-icon:active {
+  transform: translateY(0) scale(0.94);
+}
+
+.taskbar-icon.dragging {
+  opacity: 0;
+}
+
+.taskbar-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.taskbar-icon-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.taskbar-drag-overlay {
+  cursor: grabbing;
+  background: var(--surface-hover);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.30);
+  transform: scale(1.1);
+}
+
+/* ── Overflow chevron + flyout ───────────────────────────────── */
+.taskbar-chevron-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.taskbar-chevron {
+  width: 36px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.taskbar-chevron:hover,
+.taskbar-chevron.open,
+.taskbar-chevron.drop-target {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.taskbar-chevron.drop-target {
+  box-shadow: inset 0 0 0 1.5px var(--accent-border);
+}
+
+.taskbar-flyout {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: repeat(5, 40px);
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--results-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Right-click menu ────────────────────────────────────────── */
+.taskbar-menu {
+  position: fixed;
+  z-index: 100;
+  /* Opens upward — the bar it belongs to is pinned to the bottom */
+  transform: translateY(calc(-100% - 6px));
+  width: 200px;
+  padding: 6px;
+  border-radius: 10px;
+  background: var(--results-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.taskbar-menu-title {
+  padding: 6px 10px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.taskbar-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.taskbar-menu-item:hover {
+  background: var(--surface-hover);
+}
+
+.taskbar-menu-item.danger:hover {
+  background: rgba(255, 80, 80, 0.15);
+  color: rgb(255, 100, 100);
+}

@@ -67,6 +67,7 @@ export default function HomeScreen({
   deleteItem,
   renameItem,
   updateBookmark,
+  togglePin,
   reorderItems,
   moveItem,
   addToFolder,
@@ -301,6 +302,26 @@ export default function HomeScreen({
     setAppInfoItem(item)
   }, [])
 
+  // Pinning acts immediately while the modal stays open, so the modal has to
+  // read the live item rather than the snapshot taken when it was opened
+  const liveAppInfoItem = useMemo(() => {
+    if (!appInfoItem) return null
+    for (const p of data.pages) {
+      for (const it of p.items) {
+        if (it.id === appInfoItem.id) return it
+        if (it.type === 'folder') {
+          const child = it.items?.find((c) => c.id === appInfoItem.id)
+          if (child) return child
+        }
+      }
+    }
+    return null
+  }, [appInfoItem, data])
+
+  const handleTogglePin = useCallback(() => {
+    if (appInfoItem) togglePin(appInfoItem.id)
+  }, [appInfoItem, togglePin])
+
   const handleSaveAppInfo = useCallback((updates) => {
     if (appInfoItem) updateBookmark(appInfoItem.id, pageId, updates)
   }, [appInfoItem, updateBookmark, pageId])
@@ -527,12 +548,13 @@ export default function HomeScreen({
       )}
 
       {/* App info modal */}
-      {appInfoItem && (
+      {liveAppInfoItem && (
         <AppInfoModal
-          item={appInfoItem}
+          item={liveAppInfoItem}
           onClose={() => setAppInfoItem(null)}
           onSave={handleSaveAppInfo}
           onDelete={handleDeleteAppInfo}
+          onTogglePin={handleTogglePin}
           tagSuggestions={tagList}
         />
       )}

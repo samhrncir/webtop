@@ -62,7 +62,7 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSuggestions = [] }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, tagSuggestions = [] }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
@@ -223,6 +223,14 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSugge
             )}
           </div>
         </div>
+
+        <button
+          className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
+          onClick={onTogglePin}
+        >
+          <span className="app-info-pin-icon">📌</span>
+          {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
+        </button>
 
         <div className="app-info-tag-section">
           <span className="app-info-suburl-title">Tags</span>
