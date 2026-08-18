@@ -35,8 +35,15 @@ function targetUrl(item) {
 }
 
 function Favicon({ item, className }) {
-  const { src: iconSrc, onError: onIconError } = useIconSource(item)
+  const { src: iconSrc, onError: onIconError, emoji } = useIconSource(item)
 
+  if (emoji) {
+    return (
+      <div className={`${className} taskbar-icon-emoji`} role="img" aria-label={item.name}>
+        {emoji}
+      </div>
+    )
+  }
   if (!iconSrc) {
     return (
       <div
