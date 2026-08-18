@@ -17,6 +17,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { getInitialLetter, getColorForName, isSafeIconUrl } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
+import { normalizeAliases } from '../../utils/aliases.js'
 import { getTags, normalizeTagList } from '../../utils/tags.js'
 import TagInput from '../TagInput/TagInput.jsx'
 import './AppInfoModal.css'
@@ -63,11 +64,13 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSuggestions = [] }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, tagSuggestions = [] }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
+  const [aliases, setAliases] = useState(() => normalizeAliases(item.aliases))
+  const [newAlias, setNewAlias] = useState('')
   const [tags, setTags] = useState(() => getTags(item))
   const [editMode, setEditMode] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -98,6 +101,8 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSugge
     setUrl(item.url)
     setIcon(item.icon || '')
     setSubUrls(item.subUrls || [])
+    setAliases(normalizeAliases(item.aliases))
+    setNewAlias('')
     setTags(getTags(item))
     setEditMode(false)
     setShowAddForm(false)
@@ -111,13 +116,15 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSugge
       url: url.trim() || item.url,
       icon: icon.trim() || null,
       subUrls,
-      // Always sent, even when empty — updateBookmark merges into content,
-      // so clearing every tag has to write [] rather than drop the key
+      // Both always sent, even when empty — updateBookmark merges into
+      // content, so clearing every entry has to write [] rather than drop
+      // the key
+      aliases: normalizeAliases(aliases),
       tags: normalizeTagList(tags),
     })
     setEditMode(false)
     onClose()
-  }, [name, url, icon, subUrls, tags, item, onSave, onClose])
+  }, [name, url, icon, subUrls, aliases, tags, item, onSave, onClose])
 
   const handleDelete = useCallback(() => {
     if (window.confirm(`Delete "${item.name}"?`)) {
@@ -125,6 +132,17 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSugge
       onClose()
     }
   }, [item.name, onDelete, onClose])
+
+  const handleAddAlias = useCallback(() => {
+    const trimmed = newAlias.trim()
+    if (!trimmed) return
+    setAliases((prev) => normalizeAliases([...prev, trimmed]))
+    setNewAlias('')
+  }, [newAlias])
+
+  const handleRemoveAlias = useCallback((alias) => {
+    setAliases((prev) => prev.filter((a) => a !== alias))
+  }, [])
 
   const handleSetDefault = useCallback((subId) => {
     setSubUrls((prev) => prev.map((s) => ({ ...s, isDefault: subId !== null && s.id === subId })))
@@ -242,6 +260,14 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSugge
           </div>
         </div>
 
+        <button
+          className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
+          onClick={onTogglePin}
+        >
+          <span className="app-info-pin-icon">📌</span>
+          {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
+        </button>
+
         <div className="app-info-tag-section">
           <span className="app-info-suburl-title">Tags</span>
           {editMode ? (
@@ -254,6 +280,55 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, tagSugge
             </div>
           ) : (
             <p className="app-info-suburl-empty">No tags.</p>
+          )}
+        </div>
+
+        <div className="app-info-alias-section">
+          <div className="app-info-suburl-header">
+            <span className="app-info-suburl-title">Aliases</span>
+          </div>
+
+          {aliases.length > 0 ? (
+            <div className="app-info-alias-chips">
+              {aliases.map((alias) => (
+                <span key={alias} className="app-info-alias-chip">
+                  {alias}
+                  {editMode && (
+                    <button
+                      className="app-info-alias-chip-remove"
+                      onClick={() => handleRemoveAlias(alias)}
+                      aria-label={`Remove alias ${alias}`}
+                    >
+                      &times;
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="app-info-suburl-empty">
+              {editMode ? 'No aliases yet. Add alternate names to find this app in search.' : 'No aliases.'}
+            </p>
+          )}
+
+          {editMode && (
+            <div className="app-info-alias-add-row">
+              <input
+                className="app-info-input"
+                value={newAlias}
+                onChange={(e) => setNewAlias(e.target.value)}
+                placeholder="Add an alias"
+                autoComplete="off"
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddAlias() }}
+              />
+              <button
+                className="app-info-suburl-add-btn"
+                onClick={handleAddAlias}
+                aria-label="Add alias"
+              >
+                +
+              </button>
+            </div>
           )}
         </div>
 

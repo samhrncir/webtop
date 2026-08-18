@@ -174,7 +174,100 @@
   color: var(--text-muted);
 }
 
+/* Aliases section */
+.app-info-alias-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.app-info-alias-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 96px;
+  overflow-y: auto;
+}
+
+.app-info-alias-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-info-alias-chip-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.app-info-alias-chip-remove:hover {
+  color: #fc8181;
+}
+
+.app-info-alias-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-info-alias-add-row .app-info-suburl-add-btn {
+  flex-shrink: 0;
+}
+
 /* Sub pages section */
+.app-info-pin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.app-info-pin-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.app-info-pin-btn.pinned {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.app-info-pin-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
 .app-info-tag-section {
   display: flex;
   flex-direction: column;

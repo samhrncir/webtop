@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
+import { matchAlias } from '../../utils/aliases.js'
 import { flattenBookmarks, getTags, hasTag, itemMatchesQuery } from '../../utils/tags.js'
 import './SearchBar.css'
 
@@ -37,14 +38,21 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, active
   }
 
   // Gather all searchable items across all pages. Bookmarks match on name,
-  // url or tag; folders on name only. A tag filter narrows results to that
-  // tag, which means folders drop out entirely — they can't be tagged.
+  // url, alias or tag; folders on name only. A tag filter narrows results to
+  // that tag, which means folders drop out entirely — they can't be tagged.
   const allResults = React.useMemo(() => {
     if (!query.trim()) return []
     const q = query.trim().toLowerCase()
 
     return flattenBookmarks(data, { includeFolders: !activeTag })
-      .filter(({ item }) => itemMatchesQuery(item, q))
+      .map((entry) => ({
+        ...entry,
+        // Only surface the alias when the name doesn't already explain the hit
+        matchedAlias: entry.item.name?.toLowerCase().includes(q)
+          ? null
+          : matchAlias(entry.item, q),
+      }))
+      .filter(({ item, matchedAlias }) => itemMatchesQuery(item, q) || matchedAlias)
       .filter(({ item }) => !activeTag || hasTag(item, activeTag))
   }, [query, data, activeTag])
 
@@ -139,6 +147,9 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, active
                   <span className="search-result-name">{result.item.name}</span>
                   {result.item.type === 'bookmark' && (
                     <span className="search-result-url">{result.item.url}</span>
+                  )}
+                  {result.matchedAlias && (
+                    <span className="search-result-alias">alias: {result.matchedAlias}</span>
                   )}
                   {result.inFolder && (
                     <span className="search-result-url">in {result.inFolder}</span>

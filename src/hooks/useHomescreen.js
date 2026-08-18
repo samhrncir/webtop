@@ -37,19 +37,37 @@ function liveItem(rows, itemId) {
   return rows.items.find((i) => i.id === itemId && !i.deleted_at)
 }
 
+// Taskbar pins live in the item's content blob, so they need no schema of
+// their own — they ride the same rows, LWW merge and sign-out clearing.
+const rowPosition = (row) => row.position
+const pinPosition = (row) => row.content?.pinPosition || ''
+
+function byPinPosition(a, b) {
+  const pa = pinPosition(a)
+  const pb = pinPosition(b)
+  if (pa !== pb) return pa < pb ? -1 : 1
+  return a.id < b.id ? -1 : 1
+}
+
+function livePinned(rows) {
+  return rows.items
+    .filter((i) => !i.deleted_at && i.type === 'bookmark' && i.content?.pinned)
+    .sort(byPinPosition)
+}
+
 // Position after the last entry of a sorted list
-function endPosition(list) {
+function endPosition(list, keyOf = rowPosition) {
   const last = list[list.length - 1]
-  return positionBetween(last ? last.position : '', '')
+  return positionBetween(last ? keyOf(last) : '', '')
 }
 
 // Position for inserting at `index` into a sorted list (dnd semantics:
 // the moved item is excluded, then inserted at the target index)
-function positionAt(list, index, excludeId) {
+function positionAt(list, index, excludeId, keyOf = rowPosition) {
   const filtered = excludeId ? list.filter((i) => i.id !== excludeId) : list
   const clamped = Math.max(0, Math.min(index, filtered.length))
-  const prev = clamped > 0 ? filtered[clamped - 1].position : ''
-  const next = clamped < filtered.length ? filtered[clamped].position : ''
+  const prev = clamped > 0 ? keyOf(filtered[clamped - 1]) : ''
+  const next = clamped < filtered.length ? keyOf(filtered[clamped]) : ''
   try {
     return positionBetween(prev, next)
   } catch {
@@ -118,6 +136,13 @@ export function useHomescreen() {
   const releasedRef = useRef(false)
 
   const data = useMemo(() => rowsToNested(rows), [rows])
+
+  // Flat, ordered list of taskbar pins — drawn from every page and folder,
+  // so it stays the same wherever you are in the homescreen
+  const pinned = useMemo(
+    () => livePinned(rows).map((r) => ({ id: r.id, type: 'bookmark', ...r.content })),
+    [rows]
+  )
 
   // ---------- sync plumbing ----------
 
@@ -481,10 +506,44 @@ export function useHomescreen() {
     })
   }, [applyRowChanges])
 
+  const togglePin = useCallback((itemId) => {
+    const rowsNow = rowsRef.current
+    const target = liveItem(rowsNow, itemId)
+    if (!target || target.type !== 'bookmark') return
+    const content = { ...target.content }
+    if (content.pinned) {
+      delete content.pinned
+      delete content.pinPosition
+    } else {
+      content.pinned = true
+      content.pinPosition = endPosition(livePinned(rowsNow), pinPosition)
+    }
+    applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
+  }, [applyRowChanges])
+
+  const reorderPinned = useCallback((oldIndex, newIndex) => {
+    const list = livePinned(rowsRef.current)
+    const moved = list[oldIndex]
+    if (!moved) return
+    applyRowChanges({
+      items: [{
+        ...moved,
+        content: {
+          ...moved.content,
+          pinPosition: positionAt(list, newIndex, moved.id, pinPosition),
+        },
+        updated_at: nowIso(),
+      }],
+    })
+  }, [applyRowChanges])
+
   return {
     reorderFolderItems,
     ejectFromFolder,
     data,
+    pinned,
+    togglePin,
+    reorderPinned,
     currentPage,
     setCurrentPage,
     editMode,
