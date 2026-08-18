@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase.js'
 import { clearLocalData, claimLocalData } from './utils/syncV2.js'
 import { useHomescreen } from './hooks/useHomescreen.js'
+import { useSettings } from './context/SettingsContext.jsx'
+import { resolveAiChat } from './utils/aiChat.js'
 import AuthScreen from './components/AuthScreen/AuthScreen.jsx'
 import SearchBar from './components/SearchBar/SearchBar.jsx'
 import HomeScreen from './components/HomeScreen/HomeScreen.jsx'
@@ -15,6 +17,7 @@ function HomescreenApp() {
   const [folderToOpen, setFolderToOpen] = useState(null)
   // One tag at a time, shared so the chips scope both the grid and search
   const [activeTag, setActiveTag] = useState(null)
+  const { settings } = useSettings()
 
   const {
     ejectFromFolder,
@@ -41,6 +44,8 @@ function HomescreenApp() {
     exportData,
     reorderItems,
   } = useHomescreen()
+
+  const aiChat = resolveAiChat(settings, data)
 
   return (
     <div className="app">
@@ -73,6 +78,7 @@ function HomescreenApp() {
             reorderFolderItems={reorderFolderItems}
             addPage={addPage}
             onOpenSettings={() => setView('settings')}
+            aiChat={aiChat}
             folderToOpen={folderToOpen}
             clearFolderToOpen={() => setFolderToOpen(null)}
             activeTag={activeTag}
@@ -98,7 +104,12 @@ function HomescreenApp() {
         </div>
 
         <div className="app-settings">
-          <SettingsPage onBack={() => setView('home')} importData={importData} exportData={exportData} />
+          <SettingsPage
+            onBack={() => setView('home')}
+            importData={importData}
+            exportData={exportData}
+            data={data}
+          />
         </div>
 
       </div>

@@ -45,6 +45,10 @@
   color: var(--text-primary);
 }
 
+.homescreen-toolbar-btn--chat.unset {
+  opacity: 0.7;
+}
+
 .homescreen-toolbar-btn.edit-active {
   background: var(--accent-light);
   border-color: var(--accent-border);

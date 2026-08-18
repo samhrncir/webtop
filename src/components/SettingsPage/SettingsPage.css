@@ -195,6 +195,33 @@
   color: var(--text-primary);
 }
 
+.settings-select,
+.settings-text-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  max-width: 260px;
+  min-width: 0;
+}
+
+.settings-text-input {
+  width: 260px;
+}
+
+.settings-select:focus,
+.settings-text-input:focus {
+  border-color: var(--accent-border);
+}
+
+.settings-text-input.invalid {
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
 .hidden-file-input {
   display: none;
 }
