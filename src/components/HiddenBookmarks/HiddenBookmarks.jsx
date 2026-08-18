@@ -10,11 +10,6 @@ function openUrl(item) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-function locationLabel(item) {
-  const page = `Page ${item.pageIndex + 1}`
-  return item.folderName ? `${page} · ${item.folderName}` : page
-}
-
 function RowIcon({ item }) {
   const { src: iconSrc, onError: onIconError, emoji } = useIconSource(item)
   if (emoji) {
@@ -76,7 +71,8 @@ export default function HiddenBookmarks({ hiddenBookmarks, visibleBookmarks, set
           </div>
           <p className="hidden-bm-hint">
             You can also hide a bookmark from its App Info panel. Hidden bookmarks leave the
-            home screen, folders, search and taskbar, but keep their place and settings.
+            home screen, folders, search and taskbar but keep their settings; unhiding adds
+            them to the next free spot.
           </p>
         </div>
       </section>
@@ -96,7 +92,7 @@ export default function HiddenBookmarks({ hiddenBookmarks, visibleBookmarks, set
                   <div className="hidden-bm-text">
                     <span className="hidden-bm-name">{item.name}</span>
                     <span className="hidden-bm-meta" title={item.url}>
-                      {locationLabel(item)} · {item.url}
+                      {item.url}
                     </span>
                   </div>
                   <div className="hidden-bm-actions">

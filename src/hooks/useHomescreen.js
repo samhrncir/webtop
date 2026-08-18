@@ -10,7 +10,7 @@ import {
   nowIso, byPosition,
   loadRows, loadDirty, saveRows,
   rowsToNested, nestedToRows,
-  mergeRows, pruneTombstones, ensureLivePage,
+  mergeRows, ensureLivePage,
   pullRows, pushRows, subscribeToChanges,
 } from '../utils/syncV2.js'
 import { positionBetween } from '../utils/fractional.js'
@@ -48,6 +48,27 @@ function visibleRows(rows) {
 
 function liveHidden(rows) {
   return rows.items.filter((i) => !i.deleted_at && i.type === 'bookmark' && isHiddenRow(i))
+}
+
+const PAGE_CAPACITY = 20
+
+// First page at or after startIdx with a free visible slot, else a brand new
+// page appended at the end. Returns the page id, its index and any page row
+// that has to be created. Hidden rows don't occupy slots.
+function nextFreeSlot(rowsNow, startIdx = 0) {
+  const pages = livePages(rowsNow)
+  const visible = visibleRows(rowsNow)
+  const idx = pages.findIndex(
+    (p, i) => i >= startIdx && liveTopItems(visible, p.id).length < PAGE_CAPACITY
+  )
+  if (idx !== -1) return { pageId: pages[idx].id, pageIdx: idx, newPage: null }
+  const newPage = {
+    id: crypto.randomUUID(),
+    position: endPosition(pages),
+    deleted_at: null,
+    updated_at: nowIso(),
+  }
+  return { pageId: newPage.id, pageIdx: pages.length, newPage }
 }
 
 // Taskbar pins live in the item's content blob, so they need no schema of
@@ -150,21 +171,40 @@ export function useHomescreen() {
 
   const data = useMemo(() => rowsToNested(visibleRows(rows)), [rows])
 
-  // Flat list of hidden bookmarks with where they live, for the settings page
-  const hidden = useMemo(() => {
-    const pageIndex = new Map(livePages(rows).map((p, i) => [p.id, i]))
-    return liveHidden(rows)
-      .map((r) => {
-        const folder = r.folder_id ? liveItem(rows, r.folder_id) : null
-        return {
-          id: r.id,
-          type: 'bookmark',
-          ...r.content,
-          pageIndex: pageIndex.get(r.page_id) ?? 0,
-          folderName: folder?.content?.name ?? null,
-        }
-      })
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  // Flat list of hidden bookmarks for the settings page. They have no
+  // position of their own — unhiding appends to the next free slot.
+  const hidden = useMemo(
+    () => liveHidden(rows)
+      .map((r) => ({ id: r.id, type: 'bookmark', ...r.content }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    [rows]
+  )
+
+  // ---------- recycle bin ----------
+  // Deleting a page or folder tombstones it and its contents with one shared
+  // timestamp, so "what came with it" is exactly the rows sharing deleted_at.
+  // Folders that only died as part of a page delete are listed under the page.
+  const trash = useMemo(() => {
+    const pageDeletedAt = new Map(rows.pages.map((p) => [p.id, p.deleted_at]))
+    const pages = rows.pages
+      .filter((p) => p.deleted_at)
+      .map((p) => ({
+        id: p.id,
+        deletedAt: p.deleted_at,
+        itemCount: rows.items.filter(
+          (i) => i.page_id === p.id && !i.folder_id && i.deleted_at === p.deleted_at
+        ).length,
+      }))
+    const folders = rows.items
+      .filter((i) => i.type === 'folder' && i.deleted_at && pageDeletedAt.get(i.page_id) !== i.deleted_at)
+      .map((f) => ({
+        id: f.id,
+        name: f.content?.name || 'Folder',
+        deletedAt: f.deleted_at,
+        itemCount: rows.items.filter((c) => c.folder_id === f.id && c.deleted_at === f.deleted_at).length,
+      }))
+    const newestFirst = (a, b) => (a.deletedAt < b.deletedAt ? 1 : -1)
+    return { pages: pages.sort(newestFirst), folders: folders.sort(newestFirst) }
   }, [rows])
 
   // Flat, ordered list of taskbar pins — drawn from every page and folder,
@@ -207,10 +247,10 @@ export function useHomescreen() {
     for (const id of [...dirtyRef.current.items]) {
       if (sentAt.has(id) && unchanged(id)) dirtyRef.current.items.delete(id)
     }
-    const pruned = pruneTombstones(rowsRef.current, dirtyRef.current)
-    rowsRef.current = pruned
-    saveRows(pruned, dirtyRef.current)
-    setRows(pruned)
+    // Tombstones stay in local state on purpose: the Recycle Bin is built
+    // from them, and a full pull would bring them back anyway
+    saveRows(rowsRef.current, dirtyRef.current)
+    setRows(rowsRef.current)
   }, [])
 
   const schedulePush = useCallback(() => {
@@ -435,27 +475,10 @@ export function useHomescreen() {
     const bookmark = liveItem(rowsNow, bookmarkId)
     if (!bookmark) return
 
-    const pages = livePages(rowsNow)
-    const sourceIdx = pages.findIndex((p) => p.id === pageId)
-    let targetIdx = pages.findIndex(
-      (p, idx) => idx >= sourceIdx && liveTopItems(rowsNow, p.id).length < 20
-    )
+    const sourceIdx = livePages(rowsNow).findIndex((p) => p.id === pageId)
+    const { pageId: targetPageId, pageIdx: targetIdx, newPage } = nextFreeSlot(rowsNow, sourceIdx)
 
-    const changes = { pages: [], items: [] }
-    let targetPageId
-    if (targetIdx === -1) {
-      targetPageId = crypto.randomUUID()
-      changes.pages.push({
-        id: targetPageId,
-        position: endPosition(pages),
-        deleted_at: null,
-        updated_at: nowIso(),
-      })
-      targetIdx = pages.length
-    } else {
-      targetPageId = pages[targetIdx].id
-    }
-
+    const changes = { pages: newPage ? [newPage] : [], items: [] }
     changes.items.push({
       ...bookmark,
       page_id: targetPageId,
@@ -575,13 +598,80 @@ export function useHomescreen() {
     applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
   }, [applyRowChanges])
 
+  // A hidden bookmark gives up its spot: it's detached from any folder on the
+  // way out, and unhiding appends it to the first page with a free slot rather
+  // than restoring wherever it used to sit
   const setHidden = useCallback((itemId, hiddenFlag) => {
-    const target = liveItem(rowsRef.current, itemId)
+    const rowsNow = rowsRef.current
+    const target = liveItem(rowsNow, itemId)
     if (!target || target.type !== 'bookmark') return
+    const now = nowIso()
     const content = { ...target.content }
-    if (hiddenFlag) content.hidden = true
-    else delete content.hidden
-    applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
+    if (hiddenFlag) {
+      content.hidden = true
+      applyRowChanges({ items: [{ ...target, content, folder_id: null, updated_at: now }] })
+      return
+    }
+    delete content.hidden
+    const { pageId, newPage } = nextFreeSlot(rowsNow)
+    applyRowChanges({
+      pages: newPage ? [newPage] : [],
+      items: [{
+        ...target,
+        content,
+        page_id: pageId,
+        folder_id: null,
+        position: endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
+        updated_at: now,
+      }],
+    })
+  }, [applyRowChanges])
+
+  // Bring a deleted page back at the end, with everything that was deleted
+  // along with it (top-level items and their folder children)
+  const restorePage = useCallback((pageId) => {
+    const rowsNow = rowsRef.current
+    const page = rowsNow.pages.find((p) => p.id === pageId && p.deleted_at)
+    if (!page) return
+    const now = nowIso()
+    const stamp = page.deleted_at
+    const top = rowsNow.items.filter((i) => i.page_id === pageId && !i.folder_id && i.deleted_at === stamp)
+    const folderIds = new Set(top.filter((i) => i.type === 'folder').map((i) => i.id))
+    const children = rowsNow.items.filter(
+      (i) => i.folder_id && folderIds.has(i.folder_id) && i.deleted_at === stamp
+    )
+    applyRowChanges({
+      pages: [{ ...page, deleted_at: null, position: endPosition(livePages(rowsNow)), updated_at: now }],
+      items: [...top, ...children].map((i) => ({ ...i, deleted_at: null, updated_at: now })),
+    })
+  }, [applyRowChanges])
+
+  // Bring a deleted folder (and the children deleted with it) back into the
+  // first page with a free slot
+  const restoreFolder = useCallback((folderId) => {
+    const rowsNow = rowsRef.current
+    const folder = rowsNow.items.find((i) => i.id === folderId && i.type === 'folder' && i.deleted_at)
+    if (!folder) return
+    const now = nowIso()
+    const stamp = folder.deleted_at
+    const { pageId, newPage } = nextFreeSlot(rowsNow)
+    const children = rowsNow.items
+      .filter((c) => c.folder_id === folderId && c.deleted_at === stamp)
+      .map((c) => ({ ...c, page_id: pageId, deleted_at: null, updated_at: now }))
+    applyRowChanges({
+      pages: newPage ? [newPage] : [],
+      items: [
+        {
+          ...folder,
+          page_id: pageId,
+          folder_id: null,
+          position: endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
+          deleted_at: null,
+          updated_at: now,
+        },
+        ...children,
+      ],
+    })
   }, [applyRowChanges])
 
   const reorderPinned = useCallback((oldIndex, newIndex) => {
@@ -609,6 +699,9 @@ export function useHomescreen() {
     reorderPinned,
     hidden,
     setHidden,
+    trash,
+    restorePage,
+    restoreFolder,
     currentPage,
     setCurrentPage,
     editMode,

@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase.js'
 import { flattenBookmarks } from '../../utils/tags.js'
 import { normalizeChatUrl, resolveAiChat } from '../../utils/aiChat.js'
 import HiddenBookmarks from '../HiddenBookmarks/HiddenBookmarks.jsx'
+import RecycleBin from '../RecycleBin/RecycleBin.jsx'
 import './SettingsPage.css'
 
 function SettingsRow({ label, description, children }) {
@@ -60,11 +61,14 @@ export default function SettingsPage({
   hiddenBookmarks = [],
   visibleBookmarks = [],
   setHidden,
+  trash = { pages: [], folders: [] },
+  restorePage,
+  restoreFolder,
 }) {
   const { theme, preference, setPreference } = useTheme()
   const { settings, setSetting } = useSettings()
   const fileInputRef = useRef(null)
-  // null = settings root; 'hidden' = the Hidden Bookmarks sub-page
+  // null = settings root; 'hidden' = Hidden Bookmarks; 'trash' = Recycle Bin
   const [subview, setSubview] = useState(null)
 
   const handleBack = useCallback(() => {
@@ -129,7 +133,7 @@ export default function SettingsPage({
           ‹
         </button>
         <h1 className="settings-title">
-          {subview === 'hidden' ? 'Hidden Bookmarks' : 'Settings'}
+          {subview === 'hidden' ? 'Hidden Bookmarks' : subview === 'trash' ? 'Recycle Bin' : 'Settings'}
         </h1>
       </div>
 
@@ -140,6 +144,10 @@ export default function SettingsPage({
             visibleBookmarks={visibleBookmarks}
             setHidden={setHidden}
           />
+        </div>
+      ) : subview === 'trash' ? (
+        <div className="settings-body">
+          <RecycleBin trash={trash} restorePage={restorePage} restoreFolder={restoreFolder} />
         </div>
       ) : (
         <div className="settings-body">
@@ -256,6 +264,19 @@ export default function SettingsPage({
               >
                 <button className="settings-action-btn" onClick={() => setSubview('hidden')}>
                   Manage ›
+                </button>
+              </SettingsRow>
+              <div className="settings-divider" />
+              <SettingsRow
+                label="Recycle Bin"
+                description={
+                  trash.pages.length + trash.folders.length === 0
+                    ? 'Restore deleted pages and folders'
+                    : `${trash.pages.length} page${trash.pages.length === 1 ? '' : 's'}, ${trash.folders.length} folder${trash.folders.length === 1 ? '' : 's'}`
+                }
+              >
+                <button className="settings-action-btn" onClick={() => setSubview('trash')}>
+                  Open ›
                 </button>
               </SettingsRow>
             </div>

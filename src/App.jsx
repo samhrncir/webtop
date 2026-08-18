@@ -38,6 +38,9 @@ function HomescreenApp() {
     reorderPinned,
     hidden,
     setHidden,
+    trash,
+    restorePage,
+    restoreFolder,
     moveItem,
     addToFolder,
     removeFromFolder,
@@ -116,6 +119,9 @@ function HomescreenApp() {
             hiddenBookmarks={hidden}
             visibleBookmarks={flattenBookmarks(data)}
             setHidden={setHidden}
+            trash={trash}
+            restorePage={restorePage}
+            restoreFolder={restoreFolder}
           />
         </div>
 
