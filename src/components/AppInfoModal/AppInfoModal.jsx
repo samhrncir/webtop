@@ -73,7 +73,7 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, tagSuggestions = [] }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, onHide, tagSuggestions = [] }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
@@ -319,13 +319,25 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
           </div>
         </div>
 
-        <button
-          className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
-          onClick={onTogglePin}
-        >
-          <span className="app-info-pin-icon">📌</span>
-          {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
-        </button>
+        <div className="app-info-quick-actions">
+          <button
+            className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
+            onClick={onTogglePin}
+          >
+            <span className="app-info-pin-icon">📌</span>
+            {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
+          </button>
+          {onHide && (
+            <button
+              className="app-info-pin-btn"
+              onClick={onHide}
+              title="Hidden bookmarks are listed under Settings"
+            >
+              <span className="app-info-pin-icon">🙈</span>
+              Hide from home screen
+            </button>
+          )}
+        </div>
 
         <div className="app-info-tag-section">
           <span className="app-info-suburl-title">Tags</span>

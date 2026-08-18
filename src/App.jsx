@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase.js'
 import { clearLocalData, claimLocalData } from './utils/syncV2.js'
 import { useHomescreen } from './hooks/useHomescreen.js'
+import { flattenBookmarks } from './utils/tags.js'
 import { useSettings } from './context/SettingsContext.jsx'
 import { resolveAiChat } from './utils/aiChat.js'
 import AuthScreen from './components/AuthScreen/AuthScreen.jsx'
@@ -35,6 +36,8 @@ function HomescreenApp() {
     pinned,
     togglePin,
     reorderPinned,
+    hidden,
+    setHidden,
     moveItem,
     addToFolder,
     removeFromFolder,
@@ -70,6 +73,7 @@ function HomescreenApp() {
             renameItem={renameItem}
             updateBookmark={updateBookmark}
             togglePin={togglePin}
+            setHidden={setHidden}
             reorderItems={reorderItems}
             moveItem={moveItem}
             addToFolder={addToFolder}
@@ -109,6 +113,9 @@ function HomescreenApp() {
             importData={importData}
             exportData={exportData}
             data={data}
+            hiddenBookmarks={hidden}
+            visibleBookmarks={flattenBookmarks(data)}
+            setHidden={setHidden}
           />
         </div>
 

@@ -37,6 +37,19 @@ function liveItem(rows, itemId) {
   return rows.items.find((i) => i.id === itemId && !i.deleted_at)
 }
 
+// Hidden bookmarks keep their page/folder rows (and survive export/import)
+// but are dropped from the homescreen view. Every index-based edit has to
+// work off this filtered set so drag indices line up with what's on screen.
+const isHiddenRow = (row) => !!row.content?.hidden
+
+function visibleRows(rows) {
+  return { ...rows, items: rows.items.filter((i) => !isHiddenRow(i)) }
+}
+
+function liveHidden(rows) {
+  return rows.items.filter((i) => !i.deleted_at && i.type === 'bookmark' && isHiddenRow(i))
+}
+
 // Taskbar pins live in the item's content blob, so they need no schema of
 // their own — they ride the same rows, LWW merge and sign-out clearing.
 const rowPosition = (row) => row.position
@@ -51,7 +64,7 @@ function byPinPosition(a, b) {
 
 function livePinned(rows) {
   return rows.items
-    .filter((i) => !i.deleted_at && i.type === 'bookmark' && i.content?.pinned)
+    .filter((i) => !i.deleted_at && i.type === 'bookmark' && i.content?.pinned && !isHiddenRow(i))
     .sort(byPinPosition)
 }
 
@@ -135,7 +148,24 @@ export function useHomescreen() {
   // back into localStorage after clearLocalData() has wiped it
   const releasedRef = useRef(false)
 
-  const data = useMemo(() => rowsToNested(rows), [rows])
+  const data = useMemo(() => rowsToNested(visibleRows(rows)), [rows])
+
+  // Flat list of hidden bookmarks with where they live, for the settings page
+  const hidden = useMemo(() => {
+    const pageIndex = new Map(livePages(rows).map((p, i) => [p.id, i]))
+    return liveHidden(rows)
+      .map((r) => {
+        const folder = r.folder_id ? liveItem(rows, r.folder_id) : null
+        return {
+          id: r.id,
+          type: 'bookmark',
+          ...r.content,
+          pageIndex: pageIndex.get(r.page_id) ?? 0,
+          folderName: folder?.content?.name ?? null,
+        }
+      })
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  }, [rows])
 
   // Flat, ordered list of taskbar pins — drawn from every page and folder,
   // so it stays the same wherever you are in the homescreen
@@ -350,7 +380,7 @@ export function useHomescreen() {
         ...target,
         page_id: toPageId,
         folder_id: null,
-        position: positionAt(liveTopItems(rowsNow, toPageId), newIndex, itemId),
+        position: positionAt(liveTopItems(visibleRows(rowsNow), toPageId), newIndex, itemId),
         updated_at: nowIso(),
       }],
     })
@@ -373,7 +403,7 @@ export function useHomescreen() {
   }, [applyRowChanges])
 
   const reorderFolderItems = useCallback((folderId, pageId, oldIndex, newIndex) => {
-    const children = liveFolderItems(rowsRef.current, folderId)
+    const children = liveFolderItems(visibleRows(rowsRef.current), folderId)
     const moved = children[oldIndex]
     if (!moved) return
     applyRowChanges({
@@ -494,7 +524,7 @@ export function useHomescreen() {
   }, [])
 
   const reorderItems = useCallback((pageId, oldIndex, newIndex) => {
-    const list = liveTopItems(rowsRef.current, pageId)
+    const list = liveTopItems(visibleRows(rowsRef.current), pageId)
     const moved = list[oldIndex]
     if (!moved) return
     applyRowChanges({
@@ -521,6 +551,15 @@ export function useHomescreen() {
     applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
   }, [applyRowChanges])
 
+  const setHidden = useCallback((itemId, hiddenFlag) => {
+    const target = liveItem(rowsRef.current, itemId)
+    if (!target || target.type !== 'bookmark') return
+    const content = { ...target.content }
+    if (hiddenFlag) content.hidden = true
+    else delete content.hidden
+    applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
+  }, [applyRowChanges])
+
   const reorderPinned = useCallback((oldIndex, newIndex) => {
     const list = livePinned(rowsRef.current)
     const moved = list[oldIndex]
@@ -544,6 +583,8 @@ export function useHomescreen() {
     pinned,
     togglePin,
     reorderPinned,
+    hidden,
+    setHidden,
     currentPage,
     setCurrentPage,
     editMode,

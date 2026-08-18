@@ -313,6 +313,18 @@
 }
 
 /* Sub pages section */
+.app-info-quick-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.app-info-quick-actions .app-info-pin-btn {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
 .app-info-pin-btn {
   display: flex;
   align-items: center;
