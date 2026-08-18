@@ -1,7 +1,9 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useMemo } from 'react'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { useSettings } from '../../context/SettingsContext.jsx'
 import { supabase } from '../../lib/supabase.js'
+import { flattenBookmarks } from '../../utils/tags.js'
+import { normalizeChatUrl, resolveAiChat } from '../../utils/aiChat.js'
 import HiddenBookmarks from '../HiddenBookmarks/HiddenBookmarks.jsx'
 import './SettingsPage.css'
 
@@ -48,10 +50,13 @@ function Toggle({ value, onChange }) {
   )
 }
 
+const CUSTOM_URL = '__custom__'
+
 export default function SettingsPage({
   onBack,
   importData,
   exportData,
+  data,
   hiddenBookmarks = [],
   visibleBookmarks = [],
   setHidden,
@@ -66,6 +71,41 @@ export default function SettingsPage({
     if (subview) setSubview(null)
     else onBack()
   }, [subview, onBack])
+
+  // ---- AI Chat target ----
+  const bookmarks = useMemo(() => (data ? flattenBookmarks(data) : []), [data])
+  const aiChat = resolveAiChat(settings, data)
+  // What the dropdown shows: a bookmark id, CUSTOM_URL, or '' for not set.
+  // Kept locally so picking "Custom URL…" holds while the URL is still empty.
+  const [chatMode, setChatMode] = useState(() =>
+    settings.aiChatBookmarkId ? settings.aiChatBookmarkId : settings.aiChatUrl ? CUSTOM_URL : ''
+  )
+  // A picked bookmark that has since been deleted shows as "Not set"
+  const selectValue =
+    chatMode === CUSTOM_URL || chatMode === '' || bookmarks.some(({ item }) => item.id === chatMode)
+      ? chatMode
+      : ''
+  const [urlDraft, setUrlDraft] = useState(settings.aiChatUrl || '')
+  const urlDraftInvalid = urlDraft.trim().length > 0 && !normalizeChatUrl(urlDraft)
+
+  const handleChatPick = useCallback((value) => {
+    setChatMode(value)
+    if (value === CUSTOM_URL) {
+      setSetting('aiChatBookmarkId', null)
+    } else if (value) {
+      setSetting('aiChatBookmarkId', value)
+    } else {
+      setSetting('aiChatBookmarkId', null)
+      setSetting('aiChatUrl', '')
+      setUrlDraft('')
+    }
+  }, [setSetting])
+
+  const commitUrl = useCallback(() => {
+    const normalized = normalizeChatUrl(urlDraft)
+    setSetting('aiChatUrl', normalized)
+    if (normalized) setUrlDraft(normalized)
+  }, [urlDraft, setSetting])
 
   const handleImportClick = useCallback(() => {
     fileInputRef.current?.click()
@@ -142,6 +182,64 @@ export default function SettingsPage({
                   onChange={(val) => setSetting('timeFormat', val)}
                 />
               </SettingsRow>
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <h2 className="settings-section-title">AI Chat</h2>
+            <div className="settings-card">
+              <SettingsRow
+                label="Default AI chat"
+                description={
+                  aiChat
+                    ? `The 💬 AI Chat button opens ${aiChat.name}`
+                    : 'Pick a bookmark or enter a URL for the 💬 AI Chat button'
+                }
+              >
+                <select
+                  className="settings-select"
+                  value={selectValue}
+                  onChange={(e) => handleChatPick(e.target.value)}
+                  aria-label="Default AI chat"
+                >
+                  <option value="">Not set</option>
+                  {bookmarks.length > 0 && (
+                    <optgroup label="Bookmarks">
+                      {bookmarks.map(({ item, pageIdx, inFolder }) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name} — Page {pageIdx + 1}{inFolder ? ` · ${inFolder}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <option value={CUSTOM_URL}>Custom URL…</option>
+                </select>
+              </SettingsRow>
+              {chatMode === CUSTOM_URL && (
+                <>
+                  <div className="settings-divider" />
+                  <SettingsRow
+                    label="Chat URL"
+                    description={
+                      urlDraftInvalid
+                        ? 'Enter a valid http(s) URL'
+                        : 'e.g. https://claude.ai/new or https://chatgpt.com'
+                    }
+                  >
+                    <input
+                      className={`settings-text-input${urlDraftInvalid ? ' invalid' : ''}`}
+                      type="url"
+                      value={urlDraft}
+                      placeholder="https://claude.ai/new"
+                      onChange={(e) => setUrlDraft(e.target.value)}
+                      onBlur={commitUrl}
+                      onKeyDown={(e) => { if (e.key === 'Enter') commitUrl() }}
+                      spellCheck={false}
+                      autoComplete="off"
+                    />
+                  </SettingsRow>
+                </>
+              )}
             </div>
           </section>
 

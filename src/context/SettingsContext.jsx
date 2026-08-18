@@ -4,6 +4,9 @@ const SettingsContext = createContext(null)
 
 const DEFAULTS = {
   timeFormat: '12',
+  // AI Chat toolbar button target: a bookmark id takes precedence, else a URL
+  aiChatBookmarkId: null,
+  aiChatUrl: '',
 }
 
 function load() {

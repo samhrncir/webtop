@@ -77,6 +77,7 @@ export default function HomeScreen({
   reorderFolderItems,
   addPage,
   onOpenSettings,
+  aiChat,
   folderToOpen,
   clearFolderToOpen,
   activeTag,
@@ -379,6 +380,16 @@ export default function HomeScreen({
       <div className="homescreen-toolbar">
         <Clock />
         <div className="homescreen-toolbar-actions">
+          <button
+            className={`homescreen-toolbar-btn homescreen-toolbar-btn--chat${aiChat ? '' : ' unset'}`}
+            onClick={() => {
+              if (aiChat) window.open(aiChat.url, '_blank', 'noopener,noreferrer')
+              else onOpenSettings()
+            }}
+            title={aiChat ? `Open ${aiChat.name}` : 'Choose your AI chat in Settings'}
+          >
+            💬 AI Chat
+          </button>
           <button
             className="homescreen-toolbar-btn"
             onClick={onOpenSettings}
