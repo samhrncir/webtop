@@ -50,6 +50,27 @@ function liveHidden(rows) {
   return rows.items.filter((i) => !i.deleted_at && i.type === 'bookmark' && isHiddenRow(i))
 }
 
+const PAGE_CAPACITY = 20
+
+// First page at or after startIdx with a free visible slot, else a brand new
+// page appended at the end. Returns the page id, its index and any page row
+// that has to be created. Hidden rows don't occupy slots.
+function nextFreeSlot(rowsNow, startIdx = 0) {
+  const pages = livePages(rowsNow)
+  const visible = visibleRows(rowsNow)
+  const idx = pages.findIndex(
+    (p, i) => i >= startIdx && liveTopItems(visible, p.id).length < PAGE_CAPACITY
+  )
+  if (idx !== -1) return { pageId: pages[idx].id, pageIdx: idx, newPage: null }
+  const newPage = {
+    id: crypto.randomUUID(),
+    position: endPosition(pages),
+    deleted_at: null,
+    updated_at: nowIso(),
+  }
+  return { pageId: newPage.id, pageIdx: pages.length, newPage }
+}
+
 // Taskbar pins live in the item's content blob, so they need no schema of
 // their own — they ride the same rows, LWW merge and sign-out clearing.
 const rowPosition = (row) => row.position
@@ -150,22 +171,14 @@ export function useHomescreen() {
 
   const data = useMemo(() => rowsToNested(visibleRows(rows)), [rows])
 
-  // Flat list of hidden bookmarks with where they live, for the settings page
-  const hidden = useMemo(() => {
-    const pageIndex = new Map(livePages(rows).map((p, i) => [p.id, i]))
-    return liveHidden(rows)
-      .map((r) => {
-        const folder = r.folder_id ? liveItem(rows, r.folder_id) : null
-        return {
-          id: r.id,
-          type: 'bookmark',
-          ...r.content,
-          pageIndex: pageIndex.get(r.page_id) ?? 0,
-          folderName: folder?.content?.name ?? null,
-        }
-      })
-      .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-  }, [rows])
+  // Flat list of hidden bookmarks for the settings page. They have no
+  // position of their own — unhiding appends to the next free slot.
+  const hidden = useMemo(
+    () => liveHidden(rows)
+      .map((r) => ({ id: r.id, type: 'bookmark', ...r.content }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    [rows]
+  )
 
   // Flat, ordered list of taskbar pins — drawn from every page and folder,
   // so it stays the same wherever you are in the homescreen
@@ -435,27 +448,10 @@ export function useHomescreen() {
     const bookmark = liveItem(rowsNow, bookmarkId)
     if (!bookmark) return
 
-    const pages = livePages(rowsNow)
-    const sourceIdx = pages.findIndex((p) => p.id === pageId)
-    let targetIdx = pages.findIndex(
-      (p, idx) => idx >= sourceIdx && liveTopItems(rowsNow, p.id).length < 20
-    )
+    const sourceIdx = livePages(rowsNow).findIndex((p) => p.id === pageId)
+    const { pageId: targetPageId, pageIdx: targetIdx, newPage } = nextFreeSlot(rowsNow, sourceIdx)
 
-    const changes = { pages: [], items: [] }
-    let targetPageId
-    if (targetIdx === -1) {
-      targetPageId = crypto.randomUUID()
-      changes.pages.push({
-        id: targetPageId,
-        position: endPosition(pages),
-        deleted_at: null,
-        updated_at: nowIso(),
-      })
-      targetIdx = pages.length
-    } else {
-      targetPageId = pages[targetIdx].id
-    }
-
+    const changes = { pages: newPage ? [newPage] : [], items: [] }
     changes.items.push({
       ...bookmark,
       page_id: targetPageId,
@@ -575,13 +571,33 @@ export function useHomescreen() {
     applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
   }, [applyRowChanges])
 
+  // A hidden bookmark gives up its spot: it's detached from any folder on the
+  // way out, and unhiding appends it to the first page with a free slot rather
+  // than restoring wherever it used to sit
   const setHidden = useCallback((itemId, hiddenFlag) => {
-    const target = liveItem(rowsRef.current, itemId)
+    const rowsNow = rowsRef.current
+    const target = liveItem(rowsNow, itemId)
     if (!target || target.type !== 'bookmark') return
+    const now = nowIso()
     const content = { ...target.content }
-    if (hiddenFlag) content.hidden = true
-    else delete content.hidden
-    applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
+    if (hiddenFlag) {
+      content.hidden = true
+      applyRowChanges({ items: [{ ...target, content, folder_id: null, updated_at: now }] })
+      return
+    }
+    delete content.hidden
+    const { pageId, newPage } = nextFreeSlot(rowsNow)
+    applyRowChanges({
+      pages: newPage ? [newPage] : [],
+      items: [{
+        ...target,
+        content,
+        page_id: pageId,
+        folder_id: null,
+        position: endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
+        updated_at: now,
+      }],
+    })
   }, [applyRowChanges])
 
   const reorderPinned = useCallback((oldIndex, newIndex) => {
