@@ -341,6 +341,19 @@ export function useHomescreen() {
     })
   }, [currentPage, applyRowChanges])
 
+  // Hidden bookmarks are invisible inside their container, so a user deleting
+  // a folder or page that "looks empty" can't know they're there. Rather than
+  // tombstone them along with the container, park them (still hidden) at the
+  // end of a surviving page's top level so they stay on the Hidden page.
+  const relocateHidden = useCallback((rowsNow, hiddenRows, toPageId, now) => {
+    let cursor = endPosition(liveTopItems(rowsNow, toPageId))
+    return hiddenRows.map((row) => {
+      const moved = { ...row, page_id: toPageId, folder_id: null, position: cursor, updated_at: now }
+      cursor = positionBetween(cursor, '')
+      return moved
+    })
+  }, [])
+
   const deleteItem = useCallback((itemId) => {
     const rowsNow = rowsRef.current
     const target = liveItem(rowsNow, itemId)
@@ -348,12 +361,14 @@ export function useHomescreen() {
     const now = nowIso()
     const changes = [{ ...target, deleted_at: now, updated_at: now }]
     if (target.type === 'folder') {
-      for (const child of liveFolderItems(rowsNow, itemId)) {
-        changes.push({ ...child, deleted_at: now, updated_at: now })
+      const children = liveFolderItems(rowsNow, itemId)
+      for (const child of children) {
+        if (!isHiddenRow(child)) changes.push({ ...child, deleted_at: now, updated_at: now })
       }
+      changes.push(...relocateHidden(rowsNow, children.filter(isHiddenRow), target.page_id, now))
     }
     applyRowChanges({ items: changes })
-  }, [applyRowChanges])
+  }, [applyRowChanges, relocateHidden])
 
   const renameItem = useCallback((itemId, pageId, newName) => {
     const target = liveItem(rowsRef.current, itemId)
@@ -481,19 +496,28 @@ export function useHomescreen() {
 
     const changes = { pages: [{ ...page, deleted_at: now, updated_at: now }], items: [] }
     const folderIds = new Set()
+    const hiddenRows = []
     for (const item of liveTopItems(rowsNow, pageId)) {
       if (item.type === 'folder') folderIds.add(item.id)
-      changes.items.push({ ...item, deleted_at: now, updated_at: now })
+      if (isHiddenRow(item)) hiddenRows.push(item)
+      else changes.items.push({ ...item, deleted_at: now, updated_at: now })
     }
     // Folder children track their folder, not the page they were created
     // on, so tombstone them through their parent
     for (const item of rowsNow.items) {
       if (!item.deleted_at && item.folder_id && folderIds.has(item.folder_id)) {
-        changes.items.push({ ...item, deleted_at: now, updated_at: now })
+        if (isHiddenRow(item)) hiddenRows.push(item)
+        else changes.items.push({ ...item, deleted_at: now, updated_at: now })
       }
     }
+    // Hidden bookmarks survive on the nearest remaining page (previous, else next)
+    if (hiddenRows.length > 0) {
+      const idx = pages.findIndex((p) => p.id === pageId)
+      const survivor = pages[idx - 1] || pages[idx + 1]
+      changes.items.push(...relocateHidden(rowsNow, hiddenRows, survivor.id, now))
+    }
     applyRowChanges(changes)
-  }, [applyRowChanges])
+  }, [applyRowChanges, relocateHidden])
 
   const importData = useCallback(async (file) => {
     const parsed = await importDataUtil(file)
