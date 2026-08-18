@@ -1,0 +1,126 @@
+/* Rendered inside .settings-body, so it reuses the settings section/card
+   shells and only styles its own rows */
+
+.hidden-bm-picker {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px 6px;
+}
+
+.hidden-bm-select {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.hidden-bm-select:focus {
+  border-color: var(--accent-border);
+}
+
+.hidden-bm-hint,
+.hidden-bm-empty {
+  margin: 0;
+  padding: 6px 16px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.hidden-bm-empty {
+  padding: 16px;
+  text-align: center;
+}
+
+.hidden-bm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hidden-bm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.hidden-bm-row + .hidden-bm-row {
+  border-top: 1px solid var(--border);
+}
+
+.hidden-bm-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  object-fit: contain;
+  background: var(--icon-img-bg);
+  flex-shrink: 0;
+}
+
+.hidden-bm-icon--letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.hidden-bm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.hidden-bm-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hidden-bm-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hidden-bm-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.hidden-bm-unhide {
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.settings-action-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .hidden-bm-row {
+    flex-wrap: wrap;
+  }
+  .hidden-bm-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

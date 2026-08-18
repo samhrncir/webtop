@@ -68,6 +68,7 @@ export default function HomeScreen({
   renameItem,
   updateBookmark,
   togglePin,
+  setHidden,
   reorderItems,
   moveItem,
   addToFolder,
@@ -322,6 +323,14 @@ export default function HomeScreen({
     if (appInfoItem) togglePin(appInfoItem.id)
   }, [appInfoItem, togglePin])
 
+  // Hiding removes the item from the homescreen data, so close the modal
+  // explicitly rather than leaving a stale appInfoItem behind
+  const handleHide = useCallback(() => {
+    if (!appInfoItem) return
+    setHidden(appInfoItem.id, true)
+    setAppInfoItem(null)
+  }, [appInfoItem, setHidden])
+
   const handleSaveAppInfo = useCallback((updates) => {
     if (appInfoItem) updateBookmark(appInfoItem.id, pageId, updates)
   }, [appInfoItem, updateBookmark, pageId])
@@ -557,6 +566,7 @@ export default function HomeScreen({
           onSave={handleSaveAppInfo}
           onDelete={handleDeleteAppInfo}
           onTogglePin={handleTogglePin}
+          onHide={handleHide}
           tagSuggestions={tagList}
         />
       )}
