@@ -83,6 +83,21 @@
   background: var(--surface-hover);
 }
 
+/* Everything between the pinned header and footer scrolls as one region, so
+   nothing is clipped when the modal hits its 85vh cap (edit mode especially) */
+.app-info-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* keep the scrollbar off the content edge */
+  margin: 0 -8px;
+  padding: 0 8px;
+}
+
 /* Identity row */
 .app-info-identity {
   display: flex;
@@ -375,9 +390,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
+  flex-shrink: 0;
 }
 
 .app-info-suburl-header {
@@ -449,9 +462,6 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  overflow-y: auto;
-  flex: 1;
-  min-height: 0;
 }
 
 .app-info-suburl-row {
