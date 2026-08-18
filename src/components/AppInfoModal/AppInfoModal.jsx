@@ -212,262 +212,264 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
           </div>
         </div>
 
-        <div className="app-info-identity">
-          <div className="app-info-favicon-wrap">
-            {previewEmoji ? (
-              <div className="app-info-favicon-emoji" role="img" aria-label={item.name}>
-                {previewEmoji}
-              </div>
-            ) : iconSrc ? (
-              <img
-                src={iconSrc}
-                alt={item.name}
-                onError={onIconError}
-                className="app-info-favicon"
-                draggable={false}
-              />
-            ) : (
-              <div className="app-info-favicon-letter" style={{ background: bgColor }}>{letter}</div>
-            )}
-          </div>
-          <div className="app-info-fields">
-            {editMode ? (
-              <>
-                <input
-                  className="app-info-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="App name"
-                  autoComplete="off"
+        <div className="app-info-body">
+          <div className="app-info-identity">
+            <div className="app-info-favicon-wrap">
+              {previewEmoji ? (
+                <div className="app-info-favicon-emoji" role="img" aria-label={item.name}>
+                  {previewEmoji}
+                </div>
+              ) : iconSrc ? (
+                <img
+                  src={iconSrc}
+                  alt={item.name}
+                  onError={onIconError}
+                  className="app-info-favicon"
+                  draggable={false}
                 />
-                <input
-                  className="app-info-input app-info-input--url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                <input
-                  className="app-info-input app-info-input--url"
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  placeholder="Custom icon URL (optional)"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                <p className={`app-info-url-hint${iconInvalid ? ' app-info-url-hint--error' : ''}`}>
-                  {iconInvalid
-                    ? 'Icon URL must start with http:// or https://'
-                    : "Leave blank to use the site's favicon."}
-                </p>
-                <div className="app-info-emoji-row">
+              ) : (
+                <div className="app-info-favicon-letter" style={{ background: bgColor }}>{letter}</div>
+              )}
+            </div>
+            <div className="app-info-fields">
+              {editMode ? (
+                <>
                   <input
-                    className="app-info-input app-info-emoji-input"
-                    value={emoji}
-                    onChange={(e) => setEmoji(e.target.value)}
-                    placeholder="🙂"
-                    aria-label="Emoji icon"
+                    className="app-info-input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="App name"
+                    autoComplete="off"
+                  />
+                  <input
+                    className="app-info-input app-info-input--url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://example.com"
                     autoComplete="off"
                     spellCheck={false}
                   />
-                  <span className="app-info-emoji-label">Emoji icon</span>
-                  {emoji && (
-                    <button
-                      type="button"
-                      className="app-info-emoji-clear"
-                      onClick={() => setEmoji('')}
-                    >
-                      Use image icon
-                    </button>
-                  )}
-                </div>
-                <div className="app-info-emoji-presets" role="listbox" aria-label="Emoji presets">
-                  {EMOJI_PRESETS.map((e) => (
-                    <button
-                      type="button"
-                      key={e}
-                      className={`app-info-emoji-preset${emoji === e ? ' selected' : ''}`}
-                      onClick={() => setEmoji(emoji === e ? '' : e)}
-                      aria-label={e}
-                      aria-selected={emoji === e}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
-                <p className={`app-info-url-hint${emojiInvalid ? ' app-info-url-hint--error' : ''}`}>
-                  {emojiInvalid
-                    ? 'Enter a single emoji.'
-                    : 'An emoji replaces the image icon. Clear it to go back to the icon URL or favicon.'}
-                </p>
-              </>
-            ) : (
-              <>
-                <span className="app-info-display-name">{name}</span>
-                <a
-                  className="app-info-display-url"
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={url}
-                >
-                  {url}
-                </a>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="app-info-quick-actions">
-          <button
-            className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
-            onClick={onTogglePin}
-          >
-            <span className="app-info-pin-icon">📌</span>
-            {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
-          </button>
-          {onHide && (
-            <button
-              className="app-info-pin-btn"
-              onClick={onHide}
-              title="Hidden bookmarks are listed under Settings"
-            >
-              <span className="app-info-pin-icon">🙈</span>
-              Hide from home screen
-            </button>
-          )}
-        </div>
-
-        <div className="app-info-tag-section">
-          <span className="app-info-suburl-title">Tags</span>
-          {editMode ? (
-            <TagInput tags={tags} onChange={setTags} suggestions={tagSuggestions} />
-          ) : tags.length > 0 ? (
-            <div className="tag-pill-row">
-              {tags.map((tag) => (
-                <span key={tag} className="tag-pill">{tag}</span>
-              ))}
-            </div>
-          ) : (
-            <p className="app-info-suburl-empty">No tags.</p>
-          )}
-        </div>
-
-        <div className="app-info-alias-section">
-          <div className="app-info-suburl-header">
-            <span className="app-info-suburl-title">Aliases</span>
-          </div>
-
-          {aliases.length > 0 ? (
-            <div className="app-info-alias-chips">
-              {aliases.map((alias) => (
-                <span key={alias} className="app-info-alias-chip">
-                  {alias}
-                  {editMode && (
-                    <button
-                      className="app-info-alias-chip-remove"
-                      onClick={() => handleRemoveAlias(alias)}
-                      aria-label={`Remove alias ${alias}`}
-                    >
-                      &times;
-                    </button>
-                  )}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="app-info-suburl-empty">
-              {editMode ? 'No aliases yet. Add alternate names to find this app in search.' : 'No aliases.'}
-            </p>
-          )}
-
-          {editMode && (
-            <div className="app-info-alias-add-row">
-              <input
-                className="app-info-input"
-                value={newAlias}
-                onChange={(e) => setNewAlias(e.target.value)}
-                placeholder="Add an alias"
-                autoComplete="off"
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddAlias() }}
-              />
-              <button
-                className="app-info-suburl-add-btn"
-                onClick={handleAddAlias}
-                aria-label="Add alias"
-              >
-                +
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="app-info-suburl-section">
-          <div className="app-info-suburl-header">
-            <span className="app-info-suburl-title">Sub Pages</span>
-            {editMode && (
-              <button
-                className="app-info-suburl-add-btn"
-                onClick={() => setShowAddForm((v) => !v)}
-                aria-label="Add sub page"
-              >
-                +
-              </button>
-            )}
-          </div>
-
-          {subUrls.length > 0 ? (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={subUrls.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                <div className="app-info-suburl-list">
-                  {subUrls.map((sub) => (
-                    <SortableSubUrl
-                      key={sub.id}
-                      sub={sub}
-                      baseUrl={url}
-                      editMode={editMode}
-                      onSetDefault={handleSetDefault}
-                      onDelete={handleDeleteSub}
+                  <input
+                    className="app-info-input app-info-input--url"
+                    value={icon}
+                    onChange={(e) => setIcon(e.target.value)}
+                    placeholder="Custom icon URL (optional)"
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  <p className={`app-info-url-hint${iconInvalid ? ' app-info-url-hint--error' : ''}`}>
+                    {iconInvalid
+                      ? 'Icon URL must start with http:// or https://'
+                      : "Leave blank to use the site's favicon."}
+                  </p>
+                  <div className="app-info-emoji-row">
+                    <input
+                      className="app-info-input app-info-emoji-input"
+                      value={emoji}
+                      onChange={(e) => setEmoji(e.target.value)}
+                      placeholder="🙂"
+                      aria-label="Emoji icon"
+                      autoComplete="off"
+                      spellCheck={false}
                     />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            !showAddForm && (
-              <p className="app-info-suburl-empty">
-                {editMode ? 'No sub pages yet. Use + to add one.' : 'No sub pages.'}
-              </p>
-            )
-          )}
-
-          {editMode && showAddForm && (
-            <div className="app-info-add-form">
-              <input
-                className="app-info-input"
-                value={newSubName}
-                onChange={(e) => setNewSubName(e.target.value)}
-                placeholder="Name"
-                autoFocus
-                autoComplete="off"
-              />
-              <input
-                className="app-info-input"
-                value={newSubUrl}
-                onChange={(e) => setNewSubUrl(e.target.value)}
-                placeholder="/path  or  https://..."
-                autoComplete="off"
-                spellCheck={false}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAddSub() }}
-              />
-              <p className="app-info-url-hint">Use <code>/path</code> for relative or <code>https://...</code> for absolute URLs.</p>
-              <div className="app-info-add-form-actions">
-                <button className="app-info-add-cancel" onClick={handleCancelAdd}>Cancel</button>
-                <button className="app-info-add-confirm" onClick={handleAddSub}>Add</button>
-              </div>
+                    <span className="app-info-emoji-label">Emoji icon</span>
+                    {emoji && (
+                      <button
+                        type="button"
+                        className="app-info-emoji-clear"
+                        onClick={() => setEmoji('')}
+                      >
+                        Use image icon
+                      </button>
+                    )}
+                  </div>
+                  <div className="app-info-emoji-presets" role="listbox" aria-label="Emoji presets">
+                    {EMOJI_PRESETS.map((e) => (
+                      <button
+                        type="button"
+                        key={e}
+                        className={`app-info-emoji-preset${emoji === e ? ' selected' : ''}`}
+                        onClick={() => setEmoji(emoji === e ? '' : e)}
+                        aria-label={e}
+                        aria-selected={emoji === e}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={`app-info-url-hint${emojiInvalid ? ' app-info-url-hint--error' : ''}`}>
+                    {emojiInvalid
+                      ? 'Enter a single emoji.'
+                      : 'An emoji replaces the image icon. Clear it to go back to the icon URL or favicon.'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <span className="app-info-display-name">{name}</span>
+                  <a
+                    className="app-info-display-url"
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={url}
+                  >
+                    {url}
+                  </a>
+                </>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="app-info-quick-actions">
+            <button
+              className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
+              onClick={onTogglePin}
+            >
+              <span className="app-info-pin-icon">📌</span>
+              {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
+            </button>
+            {onHide && (
+              <button
+                className="app-info-pin-btn"
+                onClick={onHide}
+                title="Hidden bookmarks are listed under Settings"
+              >
+                <span className="app-info-pin-icon">🙈</span>
+                Hide from home screen
+              </button>
+            )}
+          </div>
+
+          <div className="app-info-tag-section">
+            <span className="app-info-suburl-title">Tags</span>
+            {editMode ? (
+              <TagInput tags={tags} onChange={setTags} suggestions={tagSuggestions} />
+            ) : tags.length > 0 ? (
+              <div className="tag-pill-row">
+                {tags.map((tag) => (
+                  <span key={tag} className="tag-pill">{tag}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="app-info-suburl-empty">No tags.</p>
+            )}
+          </div>
+
+          <div className="app-info-alias-section">
+            <div className="app-info-suburl-header">
+              <span className="app-info-suburl-title">Aliases</span>
+            </div>
+
+            {aliases.length > 0 ? (
+              <div className="app-info-alias-chips">
+                {aliases.map((alias) => (
+                  <span key={alias} className="app-info-alias-chip">
+                    {alias}
+                    {editMode && (
+                      <button
+                        className="app-info-alias-chip-remove"
+                        onClick={() => handleRemoveAlias(alias)}
+                        aria-label={`Remove alias ${alias}`}
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="app-info-suburl-empty">
+                {editMode ? 'No aliases yet. Add alternate names to find this app in search.' : 'No aliases.'}
+              </p>
+            )}
+
+            {editMode && (
+              <div className="app-info-alias-add-row">
+                <input
+                  className="app-info-input"
+                  value={newAlias}
+                  onChange={(e) => setNewAlias(e.target.value)}
+                  placeholder="Add an alias"
+                  autoComplete="off"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddAlias() }}
+                />
+                <button
+                  className="app-info-suburl-add-btn"
+                  onClick={handleAddAlias}
+                  aria-label="Add alias"
+                >
+                  +
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="app-info-suburl-section">
+            <div className="app-info-suburl-header">
+              <span className="app-info-suburl-title">Sub Pages</span>
+              {editMode && (
+                <button
+                  className="app-info-suburl-add-btn"
+                  onClick={() => setShowAddForm((v) => !v)}
+                  aria-label="Add sub page"
+                >
+                  +
+                </button>
+              )}
+            </div>
+
+            {subUrls.length > 0 ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={subUrls.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                  <div className="app-info-suburl-list">
+                    {subUrls.map((sub) => (
+                      <SortableSubUrl
+                        key={sub.id}
+                        sub={sub}
+                        baseUrl={url}
+                        editMode={editMode}
+                        onSetDefault={handleSetDefault}
+                        onDelete={handleDeleteSub}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            ) : (
+              !showAddForm && (
+                <p className="app-info-suburl-empty">
+                  {editMode ? 'No sub pages yet. Use + to add one.' : 'No sub pages.'}
+                </p>
+              )
+            )}
+
+            {editMode && showAddForm && (
+              <div className="app-info-add-form">
+                <input
+                  className="app-info-input"
+                  value={newSubName}
+                  onChange={(e) => setNewSubName(e.target.value)}
+                  placeholder="Name"
+                  autoFocus
+                  autoComplete="off"
+                />
+                <input
+                  className="app-info-input"
+                  value={newSubUrl}
+                  onChange={(e) => setNewSubUrl(e.target.value)}
+                  placeholder="/path  or  https://..."
+                  autoComplete="off"
+                  spellCheck={false}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddSub() }}
+                />
+                <p className="app-info-url-hint">Use <code>/path</code> for relative or <code>https://...</code> for absolute URLs.</p>
+                <div className="app-info-add-form-actions">
+                  <button className="app-info-add-cancel" onClick={handleCancelAdd}>Cancel</button>
+                  <button className="app-info-add-confirm" onClick={handleAddSub}>Add</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {editMode && (
