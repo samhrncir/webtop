@@ -4,9 +4,17 @@ import { useIconSource } from '../../hooks/useIconSource.js'
 import './FolderIcon.css'
 
 function PreviewCell({ bookmark }) {
-  const { src: iconSrc, onError: onIconError } = useIconSource(bookmark)
+  const { src: iconSrc, onError: onIconError, emoji } = useIconSource(bookmark)
   const bg = getColorForName(bookmark.name)
   const letter = getInitialLetter(bookmark.name)
+
+  if (emoji) {
+    return (
+      <div className="folder-preview-cell folder-preview-cell--emoji" role="img" aria-label={bookmark.name}>
+        {emoji}
+      </div>
+    )
+  }
 
   if (!iconSrc) {
     return (

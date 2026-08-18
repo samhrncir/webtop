@@ -48,6 +48,12 @@
   object-fit: contain;
 }
 
+.folder-preview-cell--emoji {
+  background: var(--icon-img-bg);
+  font-size: 13px;
+  line-height: 1;
+}
+
 .folder-preview-letter {
   width: 100%;
   height: 100%;
