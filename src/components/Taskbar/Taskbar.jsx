@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
+import { useDndZoom } from '../../utils/dndZoom.js'
 import './Taskbar.css'
 
 // Slot widths must match Taskbar.css — they drive the overflow split
@@ -93,6 +94,7 @@ export default function Taskbar({ pinned, onOpen, onUnpin, onReorder }) {
   const [flyoutOpen, setFlyoutOpen] = useState(false)
   const [menu, setMenu] = useState(null)
   const [activeId, setActiveId] = useState(null)
+  const dndZoom = useDndZoom()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -108,7 +110,7 @@ export default function Taskbar({ pinned, onOpen, onUnpin, onReorder }) {
     const observer = new ResizeObserver(([entry]) => setAvailable(entry.contentRect.width))
     observer.observe(node)
     observerRef.current = observer
-    setAvailable(node.getBoundingClientRect().width)
+    setAvailable(node.clientWidth)
   }, [])
 
   // Visibility is purely a function of index and width, so the strip/flyout
@@ -212,7 +214,9 @@ export default function Taskbar({ pinned, onOpen, onUnpin, onReorder }) {
     <div className="taskbar-wrapper" ref={setWrapperRef}>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={dndZoom.collision(closestCenter)}
+        modifiers={dndZoom.modifiers}
+        measuring={dndZoom.measuring}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
