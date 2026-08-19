@@ -15,6 +15,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import AppIcon from '../AppIcon/AppIcon.jsx'
+import { useDndZoom } from '../../utils/dndZoom.js'
 import './FolderOverlay.css'
 
 function SortableBookmark({ bookmark, editMode, onDelete, onOpen, onInfoOpen, frozen }) {
@@ -68,6 +69,7 @@ export default function FolderOverlay({
 
   const modalRef = useRef(null)
   const lastPointer = useRef({ x: 0, y: 0 })
+  const dndZoom = useDndZoom()
 
   useEffect(() => { setFolderName(folder.name) }, [folder.name])
 
@@ -143,7 +145,9 @@ export default function FolderOverlay({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={dndZoom.collision(closestCenter)}
+      modifiers={dndZoom.modifiers}
+      measuring={dndZoom.measuring}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}

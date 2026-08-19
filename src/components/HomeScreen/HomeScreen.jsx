@@ -26,6 +26,7 @@ import AppInfoModal from '../AppInfoModal/AppInfoModal.jsx'
 import TagFilterBar from '../TagFilterBar/TagFilterBar.jsx'
 import { allTags, flattenBookmarks, hasTag, compareByName } from '../../utils/tags.js'
 import { useSettings, clampGridColumns } from '../../context/SettingsContext.jsx'
+import { useDndZoom } from '../../utils/dndZoom.js'
 import './HomeScreen.css'
 
 // Sortable wrapper for each grid item
@@ -371,6 +372,7 @@ export default function HomeScreen({
   // The chip row is absolutely positioned, so the grid pads down to clear it
   const gridClassName = `homescreen-grid${tagList.length > 0 ? ' homescreen-grid--with-tags' : ''}`
   const { settings } = useSettings()
+  const dndZoom = useDndZoom()
   const gridStyle = { '--grid-max-cols': clampGridColumns(settings.gridMaxColumns) }
 
   return (
@@ -475,7 +477,9 @@ export default function HomeScreen({
         ) : (
           <DndContext
             sensors={sensors}
-            collisionDetection={collisionDetection}
+            collisionDetection={dndZoom.collision(collisionDetection)}
+            modifiers={dndZoom.modifiers}
+            measuring={dndZoom.measuring}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}

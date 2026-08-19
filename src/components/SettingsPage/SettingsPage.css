@@ -155,6 +155,11 @@
   cursor: pointer;
 }
 
+.settings-slider-reset {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
 .settings-slider-value {
   min-width: 2ch;
   text-align: right;

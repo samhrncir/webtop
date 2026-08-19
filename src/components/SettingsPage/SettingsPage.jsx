@@ -1,6 +1,10 @@
 import { useRef, useState, useCallback, useMemo } from 'react'
 import { useTheme } from '../../context/ThemeContext.jsx'
-import { useSettings, GRID_MIN_COLUMNS, GRID_MAX_COLUMNS, clampGridColumns } from '../../context/SettingsContext.jsx'
+import {
+  useSettings,
+  GRID_MIN_COLUMNS, GRID_MAX_COLUMNS, clampGridColumns,
+  UI_SCALE_MIN, UI_SCALE_MAX, UI_SCALE_STEP, clampUiScale,
+} from '../../context/SettingsContext.jsx'
 import { supabase } from '../../lib/supabase.js'
 import { flattenBookmarks } from '../../utils/tags.js'
 import { normalizeChatUrl, resolveAiChat } from '../../utils/aiChat.js'
@@ -173,6 +177,39 @@ export default function SettingsPage({
                   value={preference}
                   onChange={setPreference}
                 />
+              </SettingsRow>
+
+              <div className="settings-divider" />
+
+              <SettingsRow
+                label="Display Scale"
+                description={
+                  clampUiScale(settings.uiScale) === 100
+                    ? 'Size of text and controls across BrowserHome, independent of browser zoom'
+                    : `${clampUiScale(settings.uiScale)}% — BrowserHome only; pages you open are unaffected`
+                }
+              >
+                <div className="settings-slider">
+                  <input
+                    type="range"
+                    min={UI_SCALE_MIN}
+                    max={UI_SCALE_MAX}
+                    step={UI_SCALE_STEP}
+                    value={clampUiScale(settings.uiScale)}
+                    onChange={(e) => setSetting('uiScale', clampUiScale(e.target.value))}
+                    aria-label="Display scale"
+                  />
+                  <span className="settings-slider-value">{clampUiScale(settings.uiScale)}%</span>
+                  {clampUiScale(settings.uiScale) !== 100 && (
+                    <button
+                      className="settings-action-btn settings-slider-reset"
+                      onClick={() => setSetting('uiScale', 100)}
+                      title="Back to 100%"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
               </SettingsRow>
 
               <div className="settings-divider" />
