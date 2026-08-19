@@ -66,3 +66,29 @@ The `webtop-agent2/` directory is a permanent fixture — just reset its branch 
 ```powershell
 git worktree list
 ```
+
+## Testing
+
+Vitest + React Testing Library. Tests are behavioral specs — the suite doubles
+as feature documentation, so describe/it names read as sentences about what
+the app does.
+
+```powershell
+npm test          # run once (what CI runs)
+npm run test:watch
+```
+
+Rules for both agents:
+
+- **Every feature or bugfix PR carries its specs.** A fixed bug gets a test
+  that would have caught it.
+- **Colocate tests** next to the source: `src/utils/foo.test.js`,
+  `src/hooks/useHomescreen.test.jsx`.
+- **Put new logic where it's testable**: pure helpers in `src/utils/`,
+  stateful behavior in hooks. Components stay thin; component tests cover
+  user-visible flows, not implementation details. No snapshot tests.
+- **Tests never touch the network.** `src/test/setup.js` disables fetch and
+  stubs browser APIs jsdom lacks; `src/lib/supabase.js` runs on an inert stub
+  when no env credentials exist, so the whole data layer is testable offline.
+- CI (`.github/workflows/ci.yml`) runs `npm test` + `npm run build` on every
+  PR; a red check blocks merging.
