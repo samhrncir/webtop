@@ -239,32 +239,62 @@
   color: var(--text-primary);
 }
 
-.app-info-emoji-presets {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 4px;
-}
-
-.app-info-emoji-preset {
-  aspect-ratio: 1;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: var(--surface);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-}
-
-.app-info-emoji-preset:hover {
-  background: var(--surface-hover);
-  transform: scale(1.1);
-}
-
-.app-info-emoji-preset.selected {
+.app-info-emoji-clear.active {
   background: var(--accent-light);
   border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+/* Full emoji picker (emoji-picker-react), restyled onto the app's palette */
+.app-info-emoji-picker {
+  flex-shrink: 0;
+}
+
+.app-info-emoji-picker-loading {
+  height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.app-info-emoji-picker .EmojiPickerReact {
+  --epr-bg-color: var(--surface);
+  --epr-category-label-bg-color: var(--surface);
+  --epr-picker-border-color: var(--border);
+  --epr-picker-border-radius: 12px;
+  --epr-search-input-bg-color: var(--surface-hover);
+  --epr-search-input-bg-color-active: var(--surface-hover);
+  --epr-search-border-color: var(--border);
+  --epr-search-border-color-active: var(--accent-border);
+  --epr-text-color: var(--text-primary);
+  --epr-category-label-text-color: var(--text-secondary);
+  --epr-hover-bg-color: var(--accent-light);
+  --epr-focus-bg-color: var(--accent-light);
+  --epr-highlight-color: var(--accent);
+  --epr-category-icon-active-color: var(--accent);
+  --epr-emoji-size: 24px;
+  --epr-emoji-padding: 5px;
+  --epr-header-padding: 10px 10px;
+  font-family: inherit;
+}
+
+/* Dark mode uses a parallel set of variables */
+.app-info-emoji-picker .EmojiPickerReact.epr-dark-theme {
+  --epr-dark-bg-color: var(--surface);
+  --epr-dark-category-label-bg-color: var(--surface);
+  --epr-dark-picker-border-color: var(--border);
+  --epr-dark-search-input-bg-color: var(--surface-hover);
+  --epr-dark-search-input-bg-color-active: var(--surface-hover);
+  --epr-dark-text-color: var(--text-primary);
+  --epr-dark-hover-bg-color: var(--accent-light);
+  --epr-dark-focus-bg-color: var(--accent-light);
+  --epr-dark-highlight-color: var(--accent);
+  --epr-dark-category-icon-active-color: var(--accent);
 }
 
 /* Aliases section */
