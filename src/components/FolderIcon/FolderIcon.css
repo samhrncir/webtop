@@ -42,6 +42,10 @@
   justify-content: center;
 }
 
+.folder-preview-cell--image {
+  background: var(--icon-img-bg);
+}
+
 .folder-preview-cell img {
   width: 100%;
   height: 100%;
