@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useMemo } from 'react'
 import { useTheme } from '../../context/ThemeContext.jsx'
-import { useSettings } from '../../context/SettingsContext.jsx'
+import { useSettings, GRID_MIN_COLUMNS, GRID_MAX_COLUMNS, clampGridColumns } from '../../context/SettingsContext.jsx'
 import { supabase } from '../../lib/supabase.js'
 import { flattenBookmarks } from '../../utils/tags.js'
 import { normalizeChatUrl, resolveAiChat } from '../../utils/aiChat.js'
@@ -173,6 +173,26 @@ export default function SettingsPage({
                   value={preference}
                   onChange={setPreference}
                 />
+              </SettingsRow>
+
+              <div className="settings-divider" />
+
+              <SettingsRow
+                label="Grid Columns"
+                description={`Up to ${clampGridColumns(settings.gridMaxColumns)} columns of apps — fewer if the window is narrow, never fewer than ${GRID_MIN_COLUMNS}`}
+              >
+                <div className="settings-slider">
+                  <input
+                    type="range"
+                    min={GRID_MIN_COLUMNS}
+                    max={GRID_MAX_COLUMNS}
+                    step={1}
+                    value={clampGridColumns(settings.gridMaxColumns)}
+                    onChange={(e) => setSetting('gridMaxColumns', clampGridColumns(e.target.value))}
+                    aria-label="Maximum grid columns"
+                  />
+                  <span className="settings-slider-value">{clampGridColumns(settings.gridMaxColumns)}</span>
+                </div>
               </SettingsRow>
 
               <div className="settings-divider" />

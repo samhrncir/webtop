@@ -61,16 +61,34 @@
   overflow: hidden;
 }
 
+/* As many 72px columns as fit, capped by the Settings > Grid columns value
+   (--grid-max-cols): max-width = cols*72 + (cols-1)*16 gap + 48 padding.
+   Width is split so the cap never dips under four columns. */
 .homescreen-grid {
+  --grid-max-cols: 4;
   display: grid;
-  grid-template-columns: repeat(4, 72px);
+  grid-template-columns: repeat(auto-fill, 72px);
   grid-auto-rows: 96px;
   gap: 16px;
   padding: 56px 24px 24px;
   justify-content: center;
   align-content: start;
   height: 100%;
+  width: 100%;
+  max-width: calc(var(--grid-max-cols) * 88px + 32px);
+  margin: 0 auto;
+  box-sizing: border-box;
   overflow-y: auto;
+}
+
+/* Too narrow for four fixed 72px columns: keep four and let them shrink */
+@media (max-width: 400px) {
+  .homescreen-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }
 
 /* Extra clearance for the tag chip row under the toolbar */

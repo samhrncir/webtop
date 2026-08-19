@@ -142,6 +142,28 @@
   box-shadow: 0 1px 4px var(--accent-glow);
 }
 
+/* ── Slider ──────────────────────────────────────────────────── */
+.settings-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-slider input[type='range'] {
+  width: 140px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.settings-slider-value {
+  min-width: 2ch;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Toggle ──────────────────────────────────────────────────── */
 .toggle {
   width: 48px;
