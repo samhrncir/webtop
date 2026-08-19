@@ -25,6 +25,7 @@ import AddBookmarkModal from '../AddBookmarkModal/AddBookmarkModal.jsx'
 import AppInfoModal from '../AppInfoModal/AppInfoModal.jsx'
 import TagFilterBar from '../TagFilterBar/TagFilterBar.jsx'
 import { allTags, flattenBookmarks, hasTag, compareByName } from '../../utils/tags.js'
+import { useSettings, clampGridColumns } from '../../context/SettingsContext.jsx'
 import './HomeScreen.css'
 
 // Sortable wrapper for each grid item
@@ -369,6 +370,8 @@ export default function HomeScreen({
 
   // The chip row is absolutely positioned, so the grid pads down to clear it
   const gridClassName = `homescreen-grid${tagList.length > 0 ? ' homescreen-grid--with-tags' : ''}`
+  const { settings } = useSettings()
+  const gridStyle = { '--grid-max-cols': clampGridColumns(settings.gridMaxColumns) }
 
   return (
     <div
@@ -455,7 +458,7 @@ export default function HomeScreen({
         {filtering ? (
           // Alphabetical, folder-flattened: order is derived, so there is
           // nothing meaningful to drag against — no DnD here
-          <div className={gridClassName}>
+          <div className={gridClassName} style={gridStyle}>
             {displayItems.map((item) => (
               <div key={item.id} className="sortable-item">
                 <AppIcon
@@ -478,7 +481,7 @@ export default function HomeScreen({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={items.map((i) => i.id)} strategy={sortStrategy}>
-              <div className={gridClassName}>
+              <div className={gridClassName} style={gridStyle}>
                 {items.map((item) => {
                   const isOverFolder = overId === item.id && item.type === 'folder' && activeDragId !== item.id
                   return (
