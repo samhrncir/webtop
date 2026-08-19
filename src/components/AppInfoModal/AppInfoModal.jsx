@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react'
 import {
   DndContext,
   PointerSensor,
@@ -20,16 +20,12 @@ import { resolveSubUrl } from '../../utils/url.js'
 import { normalizeAliases } from '../../utils/aliases.js'
 import { getTags, normalizeTagList } from '../../utils/tags.js'
 import TagInput from '../TagInput/TagInput.jsx'
+import { useTheme } from '../../context/ThemeContext.jsx'
 import './AppInfoModal.css'
 
-// Quick picks for the emoji icon field; anything else can be typed (or pasted)
-// straight into the input, including via the OS emoji picker (Win+. / Ctrl+Cmd+Space)
-const EMOJI_PRESETS = [
-  '🏠', '⭐', '❤️', '🔥', '✅', '📌', '📁', '📝',
-  '📅', '📧', '💬', '🎵', '🎬', '🎮', '📷', '🛒',
-  '💰', '📈', '🧠', '🤖', '💻', '🌐', '🔧', '🔒',
-  '☁️', '🚀', '✈️', '🍕', '☕', '🎨', '📚', '🏋️',
-]
+// The full emoji picker (every emoji, search, categories, skin tones) is
+// only needed while editing, so it's split out of the main bundle
+const EmojiPicker = lazy(() => import('emoji-picker-react'))
 
 function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sub.id })
@@ -78,6 +74,8 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
   const [emoji, setEmoji] = useState(item.emoji || '')
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const { theme } = useTheme()
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
   const [aliases, setAliases] = useState(() => normalizeAliases(item.aliases))
   const [newAlias, setNewAlias] = useState('')
@@ -112,6 +110,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
     setUrl(item.url)
     setIcon(item.icon || '')
     setEmoji(item.emoji || '')
+    setPickerOpen(false)
     setSubUrls(item.subUrls || [])
     setAliases(normalizeAliases(item.aliases))
     setNewAlias('')
@@ -273,29 +272,23 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                       spellCheck={false}
                     />
                     <span className="app-info-emoji-label">Emoji icon</span>
+                    <button
+                      type="button"
+                      className={`app-info-emoji-clear${pickerOpen ? ' active' : ''}`}
+                      onClick={() => setPickerOpen((v) => !v)}
+                      aria-expanded={pickerOpen}
+                    >
+                      {pickerOpen ? 'Close picker' : 'Choose emoji…'}
+                    </button>
                     {emoji && (
                       <button
                         type="button"
                         className="app-info-emoji-clear"
-                        onClick={() => setEmoji('')}
+                        onClick={() => { setEmoji(''); setPickerOpen(false) }}
                       >
                         Use image icon
                       </button>
                     )}
-                  </div>
-                  <div className="app-info-emoji-presets" role="listbox" aria-label="Emoji presets">
-                    {EMOJI_PRESETS.map((e) => (
-                      <button
-                        type="button"
-                        key={e}
-                        className={`app-info-emoji-preset${emoji === e ? ' selected' : ''}`}
-                        onClick={() => setEmoji(emoji === e ? '' : e)}
-                        aria-label={e}
-                        aria-selected={emoji === e}
-                      >
-                        {e}
-                      </button>
-                    ))}
                   </div>
                   <p className={`app-info-url-hint${emojiInvalid ? ' app-info-url-hint--error' : ''}`}>
                     {emojiInvalid
@@ -319,6 +312,24 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
               )}
             </div>
           </div>
+
+          {editMode && pickerOpen && (
+            <div className="app-info-emoji-picker">
+              <Suspense fallback={<div className="app-info-emoji-picker-loading">Loading emoji…</div>}>
+                <EmojiPicker
+                  onEmojiClick={(d) => { setEmoji(d.emoji); setPickerOpen(false) }}
+                  emojiStyle="native"
+                  theme={theme === 'dark' ? 'dark' : 'light'}
+                  width="100%"
+                  height={340}
+                  lazyLoadEmojis
+                  autoFocusSearch
+                  searchPlaceHolder="Search emoji"
+                  previewConfig={{ showPreview: false }}
+                />
+              </Suspense>
+            </div>
+          )}
 
           <div className="app-info-quick-actions">
             <button
