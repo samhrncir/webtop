@@ -49,8 +49,8 @@
 }
 
 .folder-preview-cell--emoji {
-  background: var(--icon-img-bg);
-  font-size: 13px;
+  background: transparent;
+  font-size: 15px;
   line-height: 1;
 }
 
