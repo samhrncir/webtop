@@ -369,7 +369,18 @@ export default function HomeScreen({
   const activeDragItem = activeDragId ? items.find((i) => i.id === activeDragId) : null
 
   // The chip row is absolutely positioned, so the grid pads down to clear it
-  const gridClassName = `homescreen-grid${tagList.length > 0 ? ' homescreen-grid--with-tags' : ''}`
+  // The grid's scrollbar only shows while scrolling; the class drives a
+  // CSS fade and is dropped a moment after the last scroll event
+  const [gridScrolling, setGridScrolling] = useState(false)
+  const scrollIdleTimer = useRef(null)
+  const handleGridScroll = useCallback(() => {
+    setGridScrolling((s) => s || true)
+    if (scrollIdleTimer.current) clearTimeout(scrollIdleTimer.current)
+    scrollIdleTimer.current = setTimeout(() => setGridScrolling(false), 1000)
+  }, [])
+  useEffect(() => () => { if (scrollIdleTimer.current) clearTimeout(scrollIdleTimer.current) }, [])
+
+  const gridClassName = `homescreen-grid${tagList.length > 0 ? ' homescreen-grid--with-tags' : ''}${gridScrolling ? ' is-scrolling' : ''}`
   const { settings } = useSettings()
   const gridStyle = { '--grid-max-cols': clampGridColumns(settings.gridMaxColumns) }
 
@@ -458,7 +469,7 @@ export default function HomeScreen({
         {filtering ? (
           // Alphabetical, folder-flattened: order is derived, so there is
           // nothing meaningful to drag against — no DnD here
-          <div className={gridClassName} style={gridStyle}>
+          <div className={gridClassName} style={gridStyle} onScroll={handleGridScroll}>
             {displayItems.map((item) => (
               <div key={item.id} className="sortable-item">
                 <AppIcon
@@ -481,7 +492,7 @@ export default function HomeScreen({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={items.map((i) => i.id)} strategy={sortStrategy}>
-              <div className={gridClassName} style={gridStyle}>
+              <div className={gridClassName} style={gridStyle} onScroll={handleGridScroll}>
                 {items.map((item) => {
                   const isOverFolder = overId === item.id && item.type === 'folder' && activeDragId !== item.id
                   return (
