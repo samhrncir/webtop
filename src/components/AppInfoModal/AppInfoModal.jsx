@@ -22,6 +22,7 @@ import { getTags, normalizeTagList } from '../../utils/tags.js'
 import TagInput from '../TagInput/TagInput.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { refreshBrandIcons } from '../../utils/brandIcons.js'
+import { useDndZoom } from '../../utils/dndZoom.js'
 import './AppInfoModal.css'
 
 // The full emoji picker (every emoji, search, categories, skin tones) is
@@ -82,6 +83,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
     try { await refreshBrandIcons() } finally { setRefreshingIcon(false) }
   }, [])
   const { theme } = useTheme()
+  const dndZoom = useDndZoom()
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
   const [aliases, setAliases] = useState(() => normalizeAliases(item.aliases))
   const [newAlias, setNewAlias] = useState('')
@@ -447,7 +449,13 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
             </div>
 
             {subUrls.length > 0 ? (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={dndZoom.collision(closestCenter)}
+                modifiers={dndZoom.modifiers}
+                measuring={dndZoom.measuring}
+                onDragEnd={handleDragEnd}
+              >
                 <SortableContext items={subUrls.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                   <div className="app-info-suburl-list">
                     {subUrls.map((sub) => (

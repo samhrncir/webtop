@@ -26,8 +26,9 @@ function PreviewCell({ bookmark }) {
     )
   }
 
+  // Same neutral surface as image icons on the grid — no per-name colour
   return (
-    <div className="folder-preview-cell" style={{ background: bg }}>
+    <div className="folder-preview-cell folder-preview-cell--image">
       <img src={iconSrc} alt="" onError={onIconError} />
     </div>
   )

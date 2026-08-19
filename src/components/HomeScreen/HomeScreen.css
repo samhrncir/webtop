@@ -91,6 +91,31 @@
   }
 }
 
+/* Scrollbar fades out when idle. Scrollbar parts can't transition on their
+   own, so the thumb colour comes from a registered custom property, which
+   can — Chrome/Edge via scrollbar-color, Safari via ::-webkit-scrollbar. */
+@property --grid-scrollbar {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: transparent;
+}
+
+.homescreen-grid {
+  --grid-scrollbar: transparent;
+  transition: --grid-scrollbar 0.45s ease;
+  scrollbar-width: thin;
+  scrollbar-color: var(--grid-scrollbar) transparent;
+}
+
+.homescreen-grid.is-scrolling {
+  --grid-scrollbar: var(--accent-border);
+  transition-duration: 0.12s;
+}
+
+.homescreen-grid::-webkit-scrollbar-thumb {
+  background: var(--grid-scrollbar);
+}
+
 /* Extra clearance for the tag chip row under the toolbar */
 .homescreen-grid--with-tags {
   padding-top: 88px;
