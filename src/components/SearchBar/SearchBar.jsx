@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { matchAlias } from '../../utils/aliases.js'
-import { flattenBookmarks, getTags, hasTag, itemMatchesQuery } from '../../utils/tags.js'
+import { allTags, flattenBookmarks, getTags, hasTag, itemMatchesQuery } from '../../utils/tags.js'
 import './SearchBar.css'
 
 function ResultIcon({ item }) {
@@ -33,7 +33,7 @@ function ResultIcon({ item }) {
   )
 }
 
-export default function SearchBar({ data, onNavigateToPage, onOpenFolder, activeTag = null }) {
+export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSelectTag, activeTag = null }) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
@@ -45,15 +45,22 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, active
     inputRef.current?.focus()
   }
 
-  // Gather all searchable items across all pages. Bookmarks match on name,
-  // url, alias or tag; folders on name only. A tag filter narrows results to
-  // that tag, which means folders drop out entirely — they can't be tagged.
+  // Gather all searchable items across all pages. Tags whose name matches
+  // come first — picking one filters the home screen like tapping its chip.
+  // Bookmarks match on name, url, alias or tag; folders on name only. A tag
+  // filter narrows results to that tag, which means folders drop out
+  // entirely — they can't be tagged.
   const allResults = React.useMemo(() => {
     if (!query.trim()) return []
     const q = query.trim().toLowerCase()
 
-    return flattenBookmarks(data, { includeFolders: !activeTag })
+    const tagResults = allTags(data)
+      .filter(({ tag }) => tag.includes(q) && tag !== activeTag)
+      .map(({ tag, count }) => ({ kind: 'tag', tag, count }))
+
+    const itemResults = flattenBookmarks(data, { includeFolders: !activeTag })
       .map((entry) => ({
+        kind: 'item',
         ...entry,
         // Only surface the alias when the name doesn't already explain the hit
         matchedAlias: entry.item.name?.toLowerCase().includes(q)
@@ -62,9 +69,21 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, active
       }))
       .filter(({ item, matchedAlias }) => itemMatchesQuery(item, q) || matchedAlias)
       .filter(({ item }) => !activeTag || hasTag(item, activeTag))
+
+    return [...tagResults, ...itemResults]
   }, [query, data, activeTag])
 
+  const selectTag = (tag) => {
+    onSelectTag?.(tag)
+    setQuery('')
+    setActiveIndex(0)
+  }
+
   const handleResultClick = (result) => {
+    if (result.kind === 'tag') {
+      selectTag(result.tag)
+      return
+    }
     if (result.item.type === 'folder') {
       onNavigateToPage?.(result.pageIdx)
       onOpenFolder?.(result.item, result.pageIdx)
@@ -150,29 +169,51 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, active
                 onClick={() => handleResultClick(result)}
                 onMouseEnter={() => setActiveIndex(idx)}
               >
-                <ResultIcon item={result.item} />
-                <div className="search-result-info">
-                  <span className="search-result-name">{result.item.name}</span>
-                  {result.item.type === 'bookmark' && (
-                    <span className="search-result-url">{result.item.url}</span>
-                  )}
-                  {result.matchedAlias && (
-                    <span className="search-result-alias">alias: {result.matchedAlias}</span>
-                  )}
-                  {result.inFolder && (
-                    <span className="search-result-url">in {result.inFolder}</span>
-                  )}
-                  {getTags(result.item).length > 0 && (
-                    <span className="search-result-tags">
-                      {getTags(result.item).map((tag) => (
-                        <span key={tag} className="search-result-tag">{tag}</span>
-                      ))}
-                    </span>
-                  )}
-                </div>
-                <span className="search-result-page-badge">
-                  p{result.pageIdx + 1}
-                </span>
+                {result.kind === 'tag' ? (
+                  <>
+                    <div className="search-result-icon search-result-icon--tag" aria-hidden="true">#</div>
+                    <div className="search-result-info">
+                      <span className="search-result-name">#{result.tag}</span>
+                      <span className="search-result-url">
+                        Tag · {result.count} bookmark{result.count === 1 ? '' : 's'} · filter the home screen
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                  <ResultIcon item={result.item} />
+                  <div className="search-result-info">
+                    <span className="search-result-name">{result.item.name}</span>
+                    {result.item.type === 'bookmark' && (
+                      <span className="search-result-url">{result.item.url}</span>
+                    )}
+                    {result.matchedAlias && (
+                      <span className="search-result-alias">alias: {result.matchedAlias}</span>
+                    )}
+                    {result.inFolder && (
+                      <span className="search-result-url">in {result.inFolder}</span>
+                    )}
+                    {getTags(result.item).length > 0 && (
+                      <span className="search-result-tags">
+                        {getTags(result.item).map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            className={`search-result-tag${tag === activeTag ? ' is-active' : ''}`}
+                            title={`Filter home screen by #${tag}`}
+                            onClick={(e) => { e.stopPropagation(); selectTag(tag) }}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <span className="search-result-page-badge">
+                    p{result.pageIdx + 1}
+                  </span>
+                  </>
+                )}
               </div>
             ))
           )}

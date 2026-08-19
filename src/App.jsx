@@ -61,6 +61,7 @@ function HomescreenApp() {
           <SearchBar
             data={data}
             activeTag={activeTag}
+            onSelectTag={setActiveTag}
             onNavigateToPage={setCurrentPage}
             onOpenFolder={(folder, pageIdx) => { setCurrentPage(pageIdx); setFolderToOpen(folder) }}
           />
