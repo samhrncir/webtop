@@ -28,3 +28,19 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+/* Grid + floating app tray share this box; the tray is absolutely
+   positioned over the bottom of the grid rather than stacked under it */
+.app-home-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  --tray-clearance: 0px;
+}
+
+.app-home-stage.has-tray {
+  /* pill (52px) + wrapper padding, so the last row can scroll clear of it */
+  --tray-clearance: 96px;
+}

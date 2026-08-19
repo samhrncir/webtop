@@ -65,39 +65,42 @@ function HomescreenApp() {
             onNavigateToPage={setCurrentPage}
             onOpenFolder={(folder, pageIdx) => { setCurrentPage(pageIdx); setFolderToOpen(folder) }}
           />
-          <HomeScreen
-            data={data}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            editMode={editMode}
-            toggleEditMode={toggleEditMode}
-            addBookmark={addBookmark}
-            addFolder={addFolder}
-            deleteItem={deleteItem}
-            renameItem={renameItem}
-            updateBookmark={updateBookmark}
-            togglePin={togglePin}
-            setHidden={setHidden}
-            reorderItems={reorderItems}
-            moveItem={moveItem}
-            addToFolder={addToFolder}
-            removeFromFolder={removeFromFolder}
-            ejectFromFolder={ejectFromFolder}
-            reorderFolderItems={reorderFolderItems}
-            addPage={addPage}
-            onOpenSettings={() => setView('settings')}
-            aiChat={aiChat}
-            folderToOpen={folderToOpen}
-            clearFolderToOpen={() => setFolderToOpen(null)}
-            activeTag={activeTag}
-            setActiveTag={setActiveTag}
-          />
-          <Taskbar
-            pinned={pinned}
-            onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
-            onUnpin={togglePin}
-            onReorder={reorderPinned}
-          />
+          {/* The tray floats over the bottom of the grid; the stage is its anchor */}
+          <div className={`app-home-stage${pinned.length > 0 ? ' has-tray' : ''}`}>
+            <HomeScreen
+              data={data}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              editMode={editMode}
+              toggleEditMode={toggleEditMode}
+              addBookmark={addBookmark}
+              addFolder={addFolder}
+              deleteItem={deleteItem}
+              renameItem={renameItem}
+              updateBookmark={updateBookmark}
+              togglePin={togglePin}
+              setHidden={setHidden}
+              reorderItems={reorderItems}
+              moveItem={moveItem}
+              addToFolder={addToFolder}
+              removeFromFolder={removeFromFolder}
+              ejectFromFolder={ejectFromFolder}
+              reorderFolderItems={reorderFolderItems}
+              addPage={addPage}
+              onOpenSettings={() => setView('settings')}
+              aiChat={aiChat}
+              folderToOpen={folderToOpen}
+              clearFolderToOpen={() => setFolderToOpen(null)}
+              activeTag={activeTag}
+              setActiveTag={setActiveTag}
+            />
+            <Taskbar
+              pinned={pinned}
+              onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+              onUnpin={togglePin}
+              onReorder={reorderPinned}
+            />
+          </div>
           {/* A filtered view spans every page, so page dots mean nothing */}
           {!activeTag && (
             <PageIndicator
