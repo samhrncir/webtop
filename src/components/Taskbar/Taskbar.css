@@ -1,9 +1,17 @@
-/* Centre-justified pill that grows symmetrically, Windows 11 style */
+/* Centre-justified pill that grows symmetrically, Windows 11 style.
+   The wrapper floats over the bottom of the grid on a clear, faded
+   background, so apps scrolled beneath it stay faintly visible; only the
+   pill itself takes pointer events. */
 .taskbar-wrapper {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: center;
-  padding: 0 16px 10px;
-  flex-shrink: 0;
+  padding: 28px 16px 10px;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--tray-fade) 0%, var(--tray-fade-mid) 60%, transparent 100%);
 }
 
 .taskbar-pill {
@@ -19,6 +27,7 @@
   border: 1px solid var(--border);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   transition: background 0.25s;
+  pointer-events: auto;
 }
 
 /* ── Icons ───────────────────────────────────────────────────── */
@@ -138,6 +147,7 @@
 .taskbar-menu {
   position: fixed;
   z-index: 100;
+  pointer-events: auto; /* wrapper is pointer-events: none */
   /* Opens upward — the bar it belongs to is pinned to the bottom */
   transform: translateY(calc(-100% - 6px));
   width: 200px;
