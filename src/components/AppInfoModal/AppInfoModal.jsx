@@ -21,6 +21,7 @@ import { normalizeAliases } from '../../utils/aliases.js'
 import { getTags, normalizeTagList } from '../../utils/tags.js'
 import TagInput from '../TagInput/TagInput.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
+import { refreshBrandIcons } from '../../utils/brandIcons.js'
 import { useDndZoom } from '../../utils/dndZoom.js'
 import './AppInfoModal.css'
 
@@ -76,6 +77,11 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
   const [icon, setIcon] = useState(item.icon || '')
   const [emoji, setEmoji] = useState(item.emoji || '')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [refreshingIcon, setRefreshingIcon] = useState(false)
+  const handleRefreshIcon = useCallback(async () => {
+    setRefreshingIcon(true)
+    try { await refreshBrandIcons() } finally { setRefreshingIcon(false) }
+  }, [])
   const { theme } = useTheme()
   const dndZoom = useDndZoom()
   const [subUrls, setSubUrls] = useState(item.subUrls || [])
@@ -258,11 +264,22 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                     autoComplete="off"
                     spellCheck={false}
                   />
-                  <p className={`app-info-url-hint${iconInvalid ? ' app-info-url-hint--error' : ''}`}>
-                    {iconInvalid
-                      ? 'Icon URL must start with http:// or https://'
-                      : "Leave blank to use the site's favicon."}
-                  </p>
+                  <div className="app-info-icon-hint-row">
+                    <p className={`app-info-url-hint${iconInvalid ? ' app-info-url-hint--error' : ''}`}>
+                      {iconInvalid
+                        ? 'Icon URL must start with http:// or https://'
+                        : "Leave blank to use the site's brand mark (theSVG) or favicon."}
+                    </p>
+                    <button
+                      type="button"
+                      className="app-info-emoji-clear app-info-icon-refresh"
+                      onClick={handleRefreshIcon}
+                      disabled={refreshingIcon}
+                      title="Re-run icon lookup: refetch the brand icon library and reload this site's icon"
+                    >
+                      {refreshingIcon ? 'Refreshing…' : '↻ Refresh icon'}
+                    </button>
+                  </div>
                   <div className="app-info-emoji-row">
                     <input
                       className="app-info-input app-info-emoji-input"

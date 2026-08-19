@@ -1,3 +1,5 @@
+import { getBrandIconUrl, bustIconUrl } from './brandIcons.js'
+
 export function getFaviconUrl(url) {
   try {
     const parsed = new URL(url)
@@ -47,13 +49,17 @@ export function getItemEmoji(item) {
   return normalizeEmoji(item?.emoji) || null
 }
 
-// Ordered fallback chain for an item: custom icon -> favicon -> (none, caller shows letter)
-export function getIconCandidates(item) {
+// Ordered fallback chain for an item:
+//   custom icon URL (explicit user choice) -> theSVG brand mark -> favicon -> (none, caller shows letter)
+// The brand step is only present once the theSVG index has loaded; see brandIcons.js.
+export function getIconCandidates(item, { theme = 'dark' } = {}) {
   const out = []
   const custom = typeof item?.icon === 'string' ? item.icon.trim() : ''
-  if (custom && isSafeIconUrl(custom)) out.push(custom)
+  if (custom && isSafeIconUrl(custom)) out.push(bustIconUrl(custom))
+  const brand = item?.url ? getBrandIconUrl(item.url, theme) : null
+  if (brand) out.push(bustIconUrl(brand))
   const favicon = item?.url ? getFaviconUrl(item.url) : null
-  if (favicon) out.push(favicon)
+  if (favicon) out.push(bustIconUrl(favicon))
   return out
 }
 

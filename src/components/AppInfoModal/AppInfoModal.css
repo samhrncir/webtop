@@ -200,6 +200,23 @@
   color: var(--text-muted);
 }
 
+.app-info-icon-hint-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-info-icon-refresh {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.app-info-icon-refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* Emoji icon field */
 .app-info-emoji-row {
   display: flex;
