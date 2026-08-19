@@ -122,13 +122,12 @@
 .app-info-favicon-emoji {
   width: 56px;
   height: 56px;
-  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 42px;
   line-height: 1;
-  background: var(--icon-img-bg);
+  background: transparent;
 }
 
 .app-info-favicon-letter {
