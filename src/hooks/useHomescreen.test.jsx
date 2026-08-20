@@ -142,6 +142,22 @@ describe('taskbar pins', () => {
   })
 })
 
+describe('favorites', () => {
+  it('toggleFavorite flips the flag and it rides the content blob', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    act(() => result.current.toggleFavorite('b1'))
+    expect(result.current.data.pages[0].items[0].favorite).toBe(true)
+    act(() => result.current.toggleFavorite('b1'))
+    expect(result.current.data.pages[0].items[0].favorite).toBeUndefined()
+  })
+
+  it('only bookmarks can be favorited', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [folder('f1', 'p1', 'a')] })
+    act(() => result.current.toggleFavorite('f1'))
+    expect(result.current.data.pages[0].items[0].favorite).toBeUndefined()
+  })
+})
+
 describe('editing bookmarks', () => {
   it('addBookmark appends to the current page', () => {
     const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })

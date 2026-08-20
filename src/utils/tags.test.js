@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizeTag, getTags, hasTag, normalizeTagList,
   flattenBookmarks, allTags, itemMatchesQuery, compareByName,
+  itemMatchesFilter, isFavorite, FAVORITES_FILTER,
 } from './tags.js'
 
 describe('normalizeTag', () => {
@@ -89,6 +90,23 @@ describe('itemMatchesQuery', () => {
   })
   it('an empty query matches nothing', () => {
     expect(itemMatchesQuery(bm, '')).toBe(false)
+  })
+})
+
+describe('favorites filter', () => {
+  it('the sentinel matches favorited bookmarks only', () => {
+    expect(itemMatchesFilter({ favorite: true }, FAVORITES_FILTER)).toBe(true)
+    expect(itemMatchesFilter({ tags: ['work'] }, FAVORITES_FILTER)).toBe(false)
+  })
+  it('tag filters and no-filter behave as before', () => {
+    expect(itemMatchesFilter({ tags: ['work'] }, 'work')).toBe(true)
+    expect(itemMatchesFilter({ tags: ['work'] }, 'dev')).toBe(false)
+    expect(itemMatchesFilter({}, null)).toBe(true)
+  })
+  it('isFavorite never assumes the key exists', () => {
+    expect(isFavorite({})).toBe(false)
+    expect(isFavorite(null)).toBe(false)
+    expect(isFavorite({ favorite: true })).toBe(true)
   })
 })
 

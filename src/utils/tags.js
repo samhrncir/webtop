@@ -12,6 +12,22 @@ export function normalizeTag(raw) {
   return raw.trim().replace(/\s+/g, ' ').toLowerCase().slice(0, MAX_TAG_LENGTH)
 }
 
+// Favorites reuse the tag-filter plumbing: the chip bar and search scope by
+// a filter value that is either a tag name or this sentinel.
+export const FAVORITES_FILTER = '__favorites__'
+
+export function isFavorite(item) {
+  return !!item?.favorite
+}
+
+// True when the item passes the active filter (a tag, the favorites
+// sentinel, or no filter at all)
+export function itemMatchesFilter(item, filter) {
+  if (!filter) return true
+  if (filter === FAVORITES_FILTER) return isFavorite(item)
+  return hasTag(item, filter)
+}
+
 // Items predate tags, so never assume the key exists
 export function getTags(item) {
   return Array.isArray(item?.tags) ? item.tags : []

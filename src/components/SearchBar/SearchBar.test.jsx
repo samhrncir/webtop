@@ -3,13 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SearchBar from './SearchBar.jsx'
+import { FAVORITES_FILTER } from '../../utils/tags.js'
 
 const data = {
   pages: [
     {
       id: 'p1',
       items: [
-        { id: 'b1', type: 'bookmark', name: 'GitHub', url: 'https://github.com', tags: ['dev', 'work'], aliases: ['hub'] },
+        { id: 'b1', type: 'bookmark', name: 'GitHub', url: 'https://github.com', tags: ['dev', 'work'], aliases: ['hub'], favorite: true },
         { id: 'f1', type: 'folder', name: 'Design Tools', items: [
           { id: 'c1', type: 'bookmark', name: 'Figma', url: 'https://figma.com', tags: ['design'] },
         ] },
@@ -93,6 +94,21 @@ describe('tags as search results', () => {
     expect(input()).toHaveAttribute('placeholder', 'Search #design...')
     await userEvent.type(input(), 'd')
     expect(resultNames()).toEqual(['#dev', 'Figma', 'Dribbble']) // no GitHub, no folder
+  })
+})
+
+describe('favorites scoping', () => {
+  it('while the favorites filter is active, results are only favorites', async () => {
+    mount({ activeTag: FAVORITES_FILTER })
+    expect(input()).toHaveAttribute('placeholder', 'Search favorites...')
+    await userEvent.type(input(), 'd')
+    expect(resultNames()).toEqual(['#design', '#dev', 'GitHub']) // Figma/Dribbble not favorited
+  })
+
+  it('says so when nothing favorited matches', async () => {
+    mount({ activeTag: FAVORITES_FILTER })
+    await userEvent.type(input(), 'zzz')
+    expect(screen.getByText('No favorites found')).toBeInTheDocument()
   })
 })
 

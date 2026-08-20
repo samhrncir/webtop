@@ -37,6 +37,7 @@ function HomescreenApp() {
     pinned,
     togglePin,
     reorderPinned,
+    toggleFavorite,
     hidden,
     setHidden,
     trash,
@@ -80,6 +81,7 @@ function HomescreenApp() {
               renameItem={renameItem}
               updateBookmark={updateBookmark}
               togglePin={togglePin}
+              toggleFavorite={toggleFavorite}
               setHidden={setHidden}
               reorderItems={reorderItems}
               moveItem={moveItem}

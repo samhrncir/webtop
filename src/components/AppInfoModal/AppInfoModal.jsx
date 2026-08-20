@@ -80,7 +80,7 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, onHide, tagSuggestions = [] }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, onToggleFavorite, onHide, tagSuggestions = [] }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
@@ -387,6 +387,16 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
           )}
 
           <div className="app-info-quick-actions">
+            {onToggleFavorite && (
+              <button
+                className={`app-info-pin-btn${item.favorite ? ' pinned' : ''}`}
+                onClick={onToggleFavorite}
+                title="Favorites are a chip on the home screen filter bar"
+              >
+                <span className="app-info-pin-icon">{item.favorite ? '★' : '☆'}</span>
+                {item.favorite ? 'Favorited' : 'Favorite'}
+              </button>
+            )}
             <button
               className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
               onClick={onTogglePin}

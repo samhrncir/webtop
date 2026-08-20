@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { matchAlias } from '../../utils/aliases.js'
-import { allTags, flattenBookmarks, getTags, hasTag, itemMatchesQuery } from '../../utils/tags.js'
+import { allTags, flattenBookmarks, getTags, itemMatchesQuery, itemMatchesFilter, FAVORITES_FILTER } from '../../utils/tags.js'
 import './SearchBar.css'
 
 function ResultIcon({ item }) {
@@ -68,7 +68,7 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
           : matchAlias(entry.item, q),
       }))
       .filter(({ item, matchedAlias }) => itemMatchesQuery(item, q) || matchedAlias)
-      .filter(({ item }) => !activeTag || hasTag(item, activeTag))
+      .filter(({ item }) => itemMatchesFilter(item, activeTag))
 
     return [...tagResults, ...itemResults]
   }, [query, data, activeTag])
@@ -130,7 +130,11 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
           ref={inputRef}
           className="search-bar-input"
           type="text"
-          placeholder={activeTag ? `Search #${activeTag}...` : 'Search bookmarks...'}
+          placeholder={
+            activeTag === FAVORITES_FILTER
+              ? 'Search favorites...'
+              : activeTag ? `Search #${activeTag}...` : 'Search bookmarks...'
+          }
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -155,7 +159,7 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
         <div className="search-results-overlay" id="search-results-listbox" role="listbox">
           {allResults.length === 0 ? (
             <div className="search-no-results">
-              {activeTag ? `No bookmarks tagged “${activeTag}” found` : 'No bookmarks found'}
+              {activeTag === FAVORITES_FILTER ? 'No favorites found' : activeTag ? `No bookmarks tagged “${activeTag}” found` : 'No bookmarks found'}
             </div>
           ) : (
             allResults.map((result, idx) => (

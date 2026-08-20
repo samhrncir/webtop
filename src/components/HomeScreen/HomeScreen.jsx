@@ -24,7 +24,7 @@ import FolderOverlay from '../FolderOverlay/FolderOverlay.jsx'
 import AddBookmarkModal from '../AddBookmarkModal/AddBookmarkModal.jsx'
 import AppInfoModal from '../AppInfoModal/AppInfoModal.jsx'
 import TagFilterBar from '../TagFilterBar/TagFilterBar.jsx'
-import { allTags, flattenBookmarks, hasTag, compareByName } from '../../utils/tags.js'
+import { allTags, flattenBookmarks, compareByName, itemMatchesFilter, isFavorite, FAVORITES_FILTER } from '../../utils/tags.js'
 import { useSettings, clampGridColumns } from '../../context/SettingsContext.jsx'
 import { useDndZoom } from '../../utils/dndZoom.js'
 import './HomeScreen.css'
@@ -70,6 +70,7 @@ export default function HomeScreen({
   renameItem,
   updateBookmark,
   togglePin,
+  toggleFavorite,
   setHidden,
   reorderItems,
   moveItem,
@@ -106,12 +107,16 @@ export default function HomeScreen({
   // app across all pages and out of its folder, alphabetical. Ordering is
   // derived, so drag-to-reorder and paging are switched off below.
   const tagList = useMemo(() => allTags(data), [data])
+  const favoritesCount = useMemo(
+    () => flattenBookmarks(data).filter(({ item }) => isFavorite(item)).length,
+    [data]
+  )
   const filtering = Boolean(activeTag)
 
   const filteredItems = useMemo(() => {
     if (!filtering) return []
     return flattenBookmarks(data)
-      .filter(({ item }) => hasTag(item, activeTag))
+      .filter(({ item }) => itemMatchesFilter(item, activeTag))
       .map(({ item }) => item)
       .sort(compareByName)
   }, [filtering, data, activeTag])
@@ -120,8 +125,13 @@ export default function HomeScreen({
 
   // A tag can disappear (last app untagged or deleted) while it's selected
   useEffect(() => {
-    if (activeTag && !tagList.some((t) => t.tag === activeTag)) setActiveTag(null)
-  }, [activeTag, tagList, setActiveTag])
+    if (!activeTag) return
+    if (activeTag === FAVORITES_FILTER) {
+      if (favoritesCount === 0) setActiveTag(null)
+    } else if (!tagList.some((t) => t.tag === activeTag)) {
+      setActiveTag(null)
+    }
+  }, [activeTag, tagList, favoritesCount, setActiveTag])
 
   // Open folder triggered from search
   useEffect(() => {
@@ -326,6 +336,10 @@ export default function HomeScreen({
     if (appInfoItem) togglePin(appInfoItem.id)
   }, [appInfoItem, togglePin])
 
+  const handleToggleFavorite = useCallback(() => {
+    if (appInfoItem) toggleFavorite(appInfoItem.id)
+  }, [appInfoItem, toggleFavorite])
+
   // Hiding removes the item from the homescreen data, so close the modal
   // explicitly rather than leaving a stale appInfoItem behind
   const handleHide = useCallback(() => {
@@ -381,7 +395,7 @@ export default function HomeScreen({
   }, [])
   useEffect(() => () => { if (scrollIdleTimer.current) clearTimeout(scrollIdleTimer.current) }, [])
 
-  const gridClassName = `homescreen-grid${tagList.length > 0 ? ' homescreen-grid--with-tags' : ''}${gridScrolling ? ' is-scrolling' : ''}`
+  const gridClassName = `homescreen-grid${tagList.length > 0 || favoritesCount > 0 ? ' homescreen-grid--with-tags' : ''}${gridScrolling ? ' is-scrolling' : ''}`
   const { settings } = useSettings()
   const dndZoom = useDndZoom()
   const gridStyle = { '--grid-max-cols': clampGridColumns(settings.gridMaxColumns) }
@@ -424,7 +438,7 @@ export default function HomeScreen({
       </div>
 
       {/* Tag filter chips */}
-      <TagFilterBar tags={tagList} activeTag={activeTag} onSelect={setActiveTag} />
+      <TagFilterBar tags={tagList} favoritesCount={favoritesCount} activeTag={activeTag} onSelect={setActiveTag} />
 
       {/* Grid */}
       <div className={`homescreen-grid-area${activeDragId ? ' is-dragging' : ''}`}>
@@ -595,6 +609,7 @@ export default function HomeScreen({
           onSave={handleSaveAppInfo}
           onDelete={handleDeleteAppInfo}
           onTogglePin={handleTogglePin}
+          onToggleFavorite={handleToggleFavorite}
           onHide={handleHide}
           tagSuggestions={tagList}
         />
