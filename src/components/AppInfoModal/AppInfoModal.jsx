@@ -14,7 +14,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getInitialLetter, getColorForName, isSafeIconUrl, normalizeEmoji } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName, isSafeIconUrl, normalizeEmoji, normalizeIconBg, iconBgStyle } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import { normalizeAliases } from '../../utils/aliases.js'
@@ -85,6 +85,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
   const [emoji, setEmoji] = useState(item.emoji || '')
+  const [iconBg, setIconBg] = useState(() => normalizeIconBg(item.iconBg))
   const [pickerOpen, setPickerOpen] = useState(false)
   const [refreshingIcon, setRefreshingIcon] = useState(false)
   const handleRefreshIcon = useCallback(async () => {
@@ -127,6 +128,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
     setUrl(item.url)
     setIcon(item.icon || '')
     setEmoji(item.emoji || '')
+    setIconBg(normalizeIconBg(item.iconBg))
     setPickerOpen(false)
     setSubUrls(item.subUrls || [])
     setAliases(normalizeAliases(item.aliases))
@@ -146,6 +148,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
       // Emoji is stored beside the icon URL, not instead of it, so clearing
       // it falls back to whatever image icon the bookmark already had
       emoji: normalizeEmoji(emoji) || null,
+      iconBg,
       subUrls,
       // Both always sent, even when empty — updateBookmark merges into
       // content, so clearing every entry has to write [] rather than drop
@@ -155,7 +158,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
     })
     setEditMode(false)
     onClose()
-  }, [name, url, icon, emoji, subUrls, aliases, tags, item, onSave, onClose])
+  }, [name, url, icon, emoji, iconBg, subUrls, aliases, tags, item, onSave, onClose])
 
   const handleDelete = useCallback(() => {
     if (window.confirm(`Delete "${item.name}"?`)) {
@@ -241,6 +244,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                   alt={item.name}
                   onError={onIconError}
                   className="app-info-favicon"
+                  style={iconBgStyle({ iconBg })}
                   draggable={false}
                 />
               ) : (
@@ -323,6 +327,29 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                       ? 'Enter a single emoji.'
                       : 'An emoji replaces the image icon. Clear it to go back to the icon URL or favicon.'}
                   </p>
+                  <div className="app-info-iconbg-row">
+                    <span className="app-info-emoji-label">Icon background</span>
+                    <span className="app-info-iconbg-end" aria-hidden="true">Light</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={iconBg ?? 50}
+                      onChange={(e) => setIconBg(normalizeIconBg(e.target.value))}
+                      aria-label="Icon background darkness"
+                    />
+                    <span className="app-info-iconbg-end" aria-hidden="true">Dark</span>
+                    {iconBg !== null && (
+                      <button
+                        type="button"
+                        className="app-info-emoji-clear"
+                        onClick={() => setIconBg(null)}
+                      >
+                        Theme default
+                      </button>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>

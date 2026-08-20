@@ -63,6 +63,22 @@ export function getIconCandidates(item, { theme = 'dark' } = {}) {
   return out
 }
 
+// Per-bookmark icon tile darkness (content.iconBg): 0 = white ... 100 = black,
+// null/absent = the theme's default tile. Lets a logo that clashes with the
+// theme tile sit on whatever shade works for it.
+export function normalizeIconBg(value) {
+  const n = Number.parseInt(value, 10)
+  if (!Number.isFinite(n)) return null
+  return Math.min(100, Math.max(0, n))
+}
+
+// Style override for an image icon tile, or undefined for the theme default
+export function iconBgStyle(item) {
+  const v = normalizeIconBg(item?.iconBg)
+  if (v === null) return undefined
+  return { background: `hsl(0, 0%, ${100 - v}%)` }
+}
+
 export function getInitialLetter(name) {
   if (!name || name.trim().length === 0) return '?'
   return name.trim()[0].toUpperCase()
