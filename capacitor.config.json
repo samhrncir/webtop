@@ -1,0 +1,9 @@
+{
+  "appId": "com.samhrncir.browserhome",
+  "appName": "BrowserHome",
+  "webDir": "dist",
+  "backgroundColor": "#1a1a2e",
+  "android": {
+    "allowMixedContent": false
+  }
+}

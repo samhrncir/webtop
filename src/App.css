@@ -1,3 +1,13 @@
+/* Safe-area tokens: the native Android shell (Capacitor) injects
+   --safe-area-inset-* on <html>; browsers resolve env() instead; both fall
+   back to 0 on desktop, so this is inert outside the app shell. */
+:root {
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+}
+
 .app {
   display: flex;
   flex-direction: column;
@@ -6,6 +16,13 @@
   background: var(--bg-gradient);
   overflow: hidden;
   transition: background 0.25s;
+  /* Keep all chrome out from under the system bars (edge-to-edge Android);
+     the gradient still paints behind the bars because it's on this element */
+  /* This element carries the Display Scale zoom, and the injected inset
+     values are physical CSS px — divide so padding stays exact at any scale */
+  padding: calc(var(--safe-top) / var(--ui-zoom, 1)) calc(var(--safe-right) / var(--ui-zoom, 1))
+    calc(var(--safe-bottom) / var(--ui-zoom, 1)) calc(var(--safe-left) / var(--ui-zoom, 1));
+  box-sizing: border-box;
 }
 
 /* Slide container — holds home and settings side by side */

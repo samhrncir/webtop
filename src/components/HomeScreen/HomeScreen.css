@@ -193,6 +193,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* The zone is a hover target only — taps must fall through to the icons
+     underneath (on phones the zones overlap the outer grid columns) */
+  pointer-events: none;
+}
+
+.page-nav-zone .page-nav-btn {
+  pointer-events: auto;
+}
+
+/* No hover on touch: keep the page buttons faintly visible instead */
+@media (hover: none) {
+  .page-nav-btn {
+    opacity: 0.45;
+  }
 }
 
 .page-nav-zone--left  { left: 0; }

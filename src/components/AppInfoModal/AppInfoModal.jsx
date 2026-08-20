@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react'
 import {
   DndContext,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -117,7 +117,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
   }, [onClose])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   )
 

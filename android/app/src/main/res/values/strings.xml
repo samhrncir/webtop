@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BrowserHome</string>
+    <string name="title_activity_main">BrowserHome</string>
+    <string name="package_name">com.samhrncir.browserhome</string>
+    <string name="custom_url_scheme">com.samhrncir.browserhome</string>
+</resources>
