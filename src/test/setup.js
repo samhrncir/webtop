@@ -21,6 +21,11 @@ if (!window.matchMedia) {
   })
 }
 
+// SearchBar keeps the active result row in view
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 // Taskbar measures its wrapper with a ResizeObserver
 if (!window.ResizeObserver) {
   window.ResizeObserver = class {
