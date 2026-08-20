@@ -20,6 +20,8 @@ import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import { useDndZoom } from '../../utils/dndZoom.js'
+import { useSettings } from '../../context/SettingsContext.jsx'
+import { uiZoomFactor } from '../../utils/uiScale.js'
 import './Taskbar.css'
 
 // Slot widths must match Taskbar.css — they drive the overflow split
@@ -95,6 +97,8 @@ export default function Taskbar({ pinned, onOpen, onUnpin, onReorder }) {
   const [menu, setMenu] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const dndZoom = useDndZoom()
+  const { settings } = useSettings()
+  const uiZoom = uiZoomFactor(settings.uiScale)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -172,10 +176,10 @@ export default function Taskbar({ pinned, onOpen, onUnpin, onReorder }) {
       url: targetUrl(item),
       // The bar sits at the bottom of the viewport, so the menu always opens
       // upward; clamp x so it can't run off the right edge either
-      x: Math.min(e.clientX, window.innerWidth - MENU_WIDTH - 8),
-      y: e.clientY,
+      x: Math.min(e.clientX / uiZoom, window.innerWidth / uiZoom - MENU_WIDTH - 8),
+      y: e.clientY / uiZoom,
     })
-  }, [])
+  }, [uiZoom])
 
   const handleDragStart = useCallback(({ active }) => {
     suppressClickRef.current = true
