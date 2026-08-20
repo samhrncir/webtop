@@ -20,7 +20,10 @@ describe('resolveAiChat', () => {
       items: [
         {
           id: 'bm1', type: 'bookmark', name: 'Claude', url: 'https://claude.ai',
-          subUrls: [{ id: 's1', name: 'New chat', url: '/new', isDefault: true }],
+          subUrls: [
+            { id: 's1', name: 'New chat', url: '/new', isDefault: true },
+            { id: 's2', name: 'Projects', url: '/projects' },
+          ],
         },
       ],
     }],
@@ -30,6 +33,18 @@ describe('resolveAiChat', () => {
     const chat = resolveAiChat({ aiChatBookmarkId: 'bm1' }, data)
     expect(chat.name).toBe('Claude')
     expect(chat.url).toBe('https://claude.ai/new')
+  })
+
+  it('a picked sub page overrides the bookmark default target', () => {
+    const chat = resolveAiChat({ aiChatBookmarkId: 'bm1', aiChatSubUrlId: 's2' }, data)
+    expect(chat.url).toBe('https://claude.ai/projects')
+    expect(chat.name).toBe('Claude · Projects')
+  })
+
+  it('a deleted sub page falls back to the bookmark default instead of breaking', () => {
+    const chat = resolveAiChat({ aiChatBookmarkId: 'bm1', aiChatSubUrlId: 'ghost' }, data)
+    expect(chat.url).toBe('https://claude.ai/new')
+    expect(chat.name).toBe('Claude')
   })
 
   it('falls back to the custom URL when the bookmark is gone', () => {

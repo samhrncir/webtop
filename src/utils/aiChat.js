@@ -25,7 +25,18 @@ function bookmarkTarget(item) {
 export function resolveAiChat(settings, data) {
   if (settings?.aiChatBookmarkId && data) {
     const match = flattenBookmarks(data).find(({ item }) => item.id === settings.aiChatBookmarkId)
-    if (match) return { name: match.item.name, url: bookmarkTarget(match.item), item: match.item }
+    if (match) {
+      const item = match.item
+      // A picked sub page overrides the bookmark's default target; if that
+      // sub page was deleted, fall back to the default rather than break
+      const sub = settings.aiChatSubUrlId
+        ? item.subUrls?.find((s) => s.id === settings.aiChatSubUrlId)
+        : null
+      if (sub) {
+        return { name: `${item.name} · ${sub.name}`, url: resolveSubUrl(sub.url, item.url), item }
+      }
+      return { name: item.name, url: bookmarkTarget(item), item }
+    }
     // Bookmark was deleted — fall through to the URL if one is set
   }
   const url = normalizeChatUrl(settings?.aiChatUrl)
