@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase.js'
+import { Capacitor } from '@capacitor/core'
 
 const STORAGE_KEY = 'browserhome_data'
 const PENDING_SYNC_KEY = 'browserhome_pending_sync'
@@ -158,18 +159,42 @@ export function mergeData(localData, serverData) {
   return { ...serverData, pages }
 }
 
-export function exportData(currentData) {
+export async function exportData(currentData) {
   try {
     let data = currentData
     if (!data) {
       const raw = localStorage.getItem(STORAGE_KEY)
       data = raw ? JSON.parse(raw) : createDefaultData()
     }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const json = JSON.stringify(data, null, 2)
+    const filename = `webtop-backup-${new Date().toISOString().slice(0, 10)}.json`
+
+    if (Capacitor.isNativePlatform()) {
+      // Android WebView ignores anchor downloads entirely, so the native app
+      // writes the backup to cache and hands it to the system share sheet
+      // (Save to Files / Drive / email). Plugins load lazily so web bundles
+      // never pull them in.
+      const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
+      const { Share } = await import('@capacitor/share')
+      const written = await Filesystem.writeFile({
+        path: filename,
+        data: json,
+        directory: Directory.Cache,
+        encoding: Encoding.UTF8,
+      })
+      try {
+        await Share.share({ title: filename, files: [written.uri] })
+      } catch {
+        /* user dismissed the share sheet — nothing to clean up */
+      }
+      return
+    }
+
+    const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = `webtop-backup-${new Date().toISOString().slice(0, 10)}.json`
+    anchor.download = filename
     document.body.appendChild(anchor)
     anchor.click()
     document.body.removeChild(anchor)
@@ -181,7 +206,11 @@ export function exportData(currentData) {
 
 export function importData(file) {
   return new Promise((resolve, reject) => {
-    if (!file || file.type !== 'application/json') {
+    // Android's file pickers often report '' or application/octet-stream for
+    // real JSON backups, so trust the extension too — JSON.parse + isValidData
+    // below are the actual gate
+    const typeOk = ['application/json', 'text/plain', 'application/octet-stream', ''].includes(file?.type)
+    if (!file || !(typeOk || file.name?.toLowerCase().endsWith('.json'))) {
       reject(new Error('Please select a valid JSON file'))
       return
     }
