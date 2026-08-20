@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useHomescreen } from './useHomescreen.js'
 
@@ -181,5 +181,229 @@ describe('editing bookmarks', () => {
     // Visible order is [b1, b2, b3]; move b1 to the end of the *visible* list
     act(() => result.current.reorderItems('p1', 0, 2))
     expect(gridIds(result.current)).toEqual(['b2', 'b3', 'b1'])
+  })
+})
+
+describe('pages', () => {
+  it('addPage appends an empty page and navigates to it', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    act(() => result.current.addPage())
+    expect(result.current.data.pages).toHaveLength(2)
+    expect(result.current.data.pages[1].items).toEqual([])
+    expect(result.current.currentPage).toBe(1)
+  })
+
+  it('deletePage refuses to delete the last remaining page', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    act(() => result.current.deletePage('p1'))
+    expect(result.current.data.pages).toHaveLength(1)
+    expect(gridIds(result.current)).toEqual(['b1'])
+  })
+
+  it('deletePage ignores unknown page ids', () => {
+    const { result } = mount({ pages: [page('p1', 'a'), page('p2', 'b')], items: [] })
+    act(() => result.current.deletePage('nope'))
+    expect(result.current.data.pages).toHaveLength(2)
+  })
+})
+
+describe('folders', () => {
+  const twoChildFolder = () => ({
+    pages: [page('p1', 'a')],
+    items: [
+      folder('f1', 'p1', 'a'),
+      bm('c1', 'p1', 'a', {}, { folder_id: 'f1' }),
+      bm('c2', 'p1', 'b', {}, { folder_id: 'f1' }),
+    ],
+  })
+
+  it('addFolder creates an empty folder on the current page', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    act(() => result.current.addFolder('Stuff'))
+    const items = result.current.data.pages[0].items
+    expect(items[1]).toMatchObject({ type: 'folder', name: 'Stuff', items: [] })
+  })
+
+  it('addToFolder moves a bookmark in at the end of the folder', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a')],
+      items: [folder('f1', 'p1', 'a'), bm('c1', 'p1', 'a', {}, { folder_id: 'f1' }), bm('b1', 'p1', 'b')],
+    })
+    act(() => result.current.addToFolder('b1', 'f1', 'p1'))
+    expect(gridIds(result.current)).toEqual(['f1'])
+    expect(folderChildIds(result.current, 'f1')).toEqual(['c1', 'b1'])
+  })
+
+  it('addToFolder refuses non-folders and missing rows', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a'), bm('b2', 'p1', 'b')] })
+    act(() => result.current.addToFolder('b1', 'b2', 'p1')) // target is a bookmark
+    act(() => result.current.addToFolder('ghost', 'b2', 'p1'))
+    expect(gridIds(result.current)).toEqual(['b1', 'b2'])
+  })
+
+  it('reorderFolderItems reorders children by visible index', () => {
+    const { result } = mount(twoChildFolder())
+    act(() => result.current.reorderFolderItems('f1', 'p1', 0, 1))
+    expect(folderChildIds(result.current, 'f1')).toEqual(['c2', 'c1'])
+  })
+
+  it('removeFromFolder deletes the bookmark outright', () => {
+    const { result } = mount(twoChildFolder())
+    act(() => result.current.removeFromFolder('c1', 'f1', 'p1'))
+    expect(folderChildIds(result.current, 'f1')).toEqual(['c2'])
+    expect(result.current.hidden).toHaveLength(0)
+    expect(result.current.trash.folders).toHaveLength(0)
+  })
+
+  it('ejectFromFolder drops the bookmark back onto the page when there is room', () => {
+    const { result } = mount(twoChildFolder())
+    act(() => result.current.ejectFromFolder('c1', 'f1', 'p1'))
+    expect(gridIds(result.current)).toEqual(['f1', 'c1'])
+    expect(folderChildIds(result.current, 'f1')).toEqual(['c2'])
+  })
+
+  it('ejectFromFolder overflows to a new page when the source page is full', () => {
+    const filler = Array.from({ length: 19 }, (_, i) =>
+      bm(`b${i}`, 'p1', `b${String(i).padStart(2, '0')}`)
+    )
+    const { result } = mount({
+      pages: [page('p1', 'a')],
+      items: [folder('f1', 'p1', 'a'), ...filler, bm('c1', 'p1', 'a', {}, { folder_id: 'f1' })],
+    })
+    act(() => result.current.ejectFromFolder('c1', 'f1', 'p1'))
+    expect(result.current.data.pages).toHaveLength(2)
+    expect(gridIds(result.current, 1)).toEqual(['c1'])
+    expect(result.current.currentPage).toBe(1) // follows the ejected bookmark
+  })
+})
+
+describe('moving between pages', () => {
+  it('moveItem places the item at the target index among visible items', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a'), page('p2', 'b')],
+      items: [bm('b1', 'p1', 'a'), bm('b2', 'p1', 'b'), bm('x1', 'p2', 'a'), bm('x2', 'p2', 'b')],
+    })
+    act(() => result.current.moveItem('b1', 'p1', 'p2', 1))
+    expect(gridIds(result.current, 0)).toEqual(['b2'])
+    expect(gridIds(result.current, 1)).toEqual(['x1', 'b1', 'x2'])
+  })
+
+  it('moveItem clears folder membership on the way out', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a'), page('p2', 'b')],
+      items: [folder('f1', 'p1', 'a'), bm('c1', 'p1', 'a', {}, { folder_id: 'f1' })],
+    })
+    act(() => result.current.moveItem('c1', 'p1', 'p2', 0))
+    expect(folderChildIds(result.current, 'f1')).toEqual([])
+    expect(gridIds(result.current, 1)).toEqual(['c1'])
+  })
+})
+
+describe('renaming', () => {
+  it('renameItem changes the label and keeps everything else', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a')],
+      items: [bm('b1', 'p1', 'a', { tags: ['work'] })],
+    })
+    act(() => result.current.renameItem('b1', 'p1', 'Renamed'))
+    expect(result.current.data.pages[0].items[0]).toMatchObject({
+      name: 'Renamed', url: 'https://b1.test', tags: ['work'],
+    })
+  })
+})
+
+describe('import / export', () => {
+  const readBlob = (blob) => new Promise((resolve) => {
+    const r = new FileReader()
+    r.onload = (e) => resolve(e.target.result)
+    r.readAsText(blob)
+  })
+
+  function captureDownload() {
+    const captured = {}
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => { captured.blob = blob; return 'blob:test' })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function () { captured.filename = this.download })
+    return captured
+  }
+
+  it('exportData downloads the current data as a dated JSON backup', async () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a', { tags: ['work'] })] })
+    const captured = captureDownload()
+    act(() => result.current.exportData())
+    expect(captured.filename).toMatch(/^webtop-backup-\d{4}-\d{2}-\d{2}\.json$/)
+    const parsed = JSON.parse(await readBlob(captured.blob))
+    expect(parsed.pages[0].items[0]).toMatchObject({ id: 'b1', name: 'b1', tags: ['work'] })
+  })
+
+  it('importData replaces everything with the file contents and returns to page 1', async () => {
+    const { result } = mount({ pages: [page('p1', 'a'), page('p2', 'b')], items: [bm('old', 'p1', 'a')] })
+    act(() => result.current.setCurrentPage(1))
+    const blob = { pages: [{ id: 'np', items: [{ id: 'nb', type: 'bookmark', name: 'Imported', url: 'https://i.test' }] }] }
+    const file = new File([JSON.stringify(blob)], 'backup.json', { type: 'application/json' })
+    await act(async () => { await result.current.importData(file) })
+    expect(result.current.data.pages).toHaveLength(1)
+    expect(gridIds(result.current)).toEqual(['nb'])
+    expect(result.current.currentPage).toBe(0)
+  })
+
+  it('hidden bookmarks survive an export/import round trip', async () => {
+    const { result } = mount({
+      pages: [page('p1', 'a')],
+      items: [bm('b1', 'p1', 'a'), bm('h1', 'p1', 'b', { hidden: true })],
+    })
+    const captured = captureDownload()
+    act(() => result.current.exportData())
+    const text = await readBlob(captured.blob)
+
+    const file = new File([text], 'backup.json', { type: 'application/json' })
+    await act(async () => { await result.current.importData(file) })
+    expect(gridIds(result.current)).toEqual(['b1'])
+    expect(result.current.hidden.map((h) => h.id)).toEqual(['h1'])
+  })
+
+  it('importData rejects non-JSON files and leaves the data alone', async () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    const file = new File(['nope'], 'notes.txt', { type: 'text/plain' })
+    await expect(result.current.importData(file)).rejects.toThrow()
+    expect(gridIds(result.current)).toEqual(['b1'])
+  })
+})
+
+describe('persistence', () => {
+  it('mutations survive a remount (fresh hook, same storage)', () => {
+    const first = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    act(() => first.result.current.addBookmark('https://new.test', 'Kept'))
+    act(() => first.result.current.togglePin('b1'))
+    first.unmount()
+
+    const second = renderHook(() => useHomescreen()) // no re-seed: reads storage
+    expect(second.result.current.data.pages[0].items.map((i) => i.name)).toEqual(['b1', 'Kept'])
+    expect(second.result.current.pinned.map((p) => p.id)).toEqual(['b1'])
+  })
+
+  it('first run with no v2 rows seeds from the legacy v1 blob', () => {
+    localStorage.setItem('browserhome_data', JSON.stringify({
+      pages: [{ id: 'lp', items: [{ id: 'lb', type: 'bookmark', name: 'Legacy', url: 'https://l.test' }] }],
+    }))
+    const { result } = renderHook(() => useHomescreen())
+    expect(result.current.data.pages[0].items[0]).toMatchObject({ id: 'lb', name: 'Legacy' })
+  })
+
+  it('a completely fresh start gets one empty page', () => {
+    const { result } = renderHook(() => useHomescreen())
+    expect(result.current.data.pages).toHaveLength(1)
+    expect(result.current.data.pages[0].items).toEqual([])
+  })
+})
+
+describe('edit mode', () => {
+  it('toggleEditMode flips the flag', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [] })
+    expect(result.current.editMode).toBe(false)
+    act(() => result.current.toggleEditMode())
+    expect(result.current.editMode).toBe(true)
+    act(() => result.current.toggleEditMode())
+    expect(result.current.editMode).toBe(false)
   })
 })
