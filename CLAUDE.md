@@ -74,9 +74,16 @@ as feature documentation, so describe/it names read as sentences about what
 the app does.
 
 ```powershell
-npm test          # run once (what CI runs)
+npm test          # run once with the coverage gate (what CI runs)
+npm run test:fast # run without coverage, for quick iteration
 npm run test:watch
 ```
+
+**Coverage ratchet:** `npm test` fails if coverage over `src/**` drops below
+the thresholds in `vite.config.js` — an untested new feature fails CI.
+When a local run beats the floors, vitest's `autoUpdate` rewrites them to
+the new values; commit that bump with your PR. The floors only go up —
+never lower them by hand to get a PR through; write the missing specs.
 
 Rules for both agents:
 
