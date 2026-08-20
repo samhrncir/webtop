@@ -77,7 +77,7 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  max-height: 60vh;
+  max-height: calc(60vh / var(--ui-zoom, 1));
   overflow-y: auto;
   z-index: 100;
   padding: 8px 0;

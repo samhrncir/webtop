@@ -3,7 +3,8 @@ import { supabase } from './lib/supabase.js'
 import { clearLocalData, claimLocalData } from './utils/syncV2.js'
 import { useHomescreen } from './hooks/useHomescreen.js'
 import { flattenBookmarks } from './utils/tags.js'
-import { useSettings, clampUiScale } from './context/SettingsContext.jsx'
+import { useSettings } from './context/SettingsContext.jsx'
+import { uiScaleStyle } from './utils/uiScale.js'
 import { resolveAiChat } from './utils/aiChat.js'
 import AuthScreen from './components/AuthScreen/AuthScreen.jsx'
 import SearchBar from './components/SearchBar/SearchBar.jsx'
@@ -52,10 +53,9 @@ function HomescreenApp() {
   } = useHomescreen()
 
   const aiChat = resolveAiChat(settings, data)
-  const uiZoom = clampUiScale(settings.uiScale) / 100
 
   return (
-    <div className="app" style={{ zoom: uiZoom }}>
+    <div className="app" style={uiScaleStyle(settings.uiScale)}>
       <div className={`app-view${view === 'settings' ? ' app-view--settings' : ''}`}>
 
         <div className="app-home">
