@@ -674,6 +674,15 @@ export function useHomescreen() {
     })
   }, [applyRowChanges])
 
+  const toggleFavorite = useCallback((itemId) => {
+    const target = liveItem(rowsRef.current, itemId)
+    if (!target || target.type !== 'bookmark') return
+    const content = { ...target.content }
+    if (content.favorite) delete content.favorite
+    else content.favorite = true
+    applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
+  }, [applyRowChanges])
+
   const reorderPinned = useCallback((oldIndex, newIndex) => {
     const list = livePinned(rowsRef.current)
     const moved = list[oldIndex]
@@ -697,6 +706,7 @@ export function useHomescreen() {
     pinned,
     togglePin,
     reorderPinned,
+    toggleFavorite,
     hidden,
     setHidden,
     trash,

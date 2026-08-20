@@ -28,7 +28,7 @@ const baseItem = {
 function mount(item = {}, props = {}) {
   const handlers = {
     onClose: vi.fn(), onSave: vi.fn(), onDelete: vi.fn(),
-    onTogglePin: vi.fn(), onHide: vi.fn(),
+    onTogglePin: vi.fn(), onToggleFavorite: vi.fn(), onHide: vi.fn(),
     ...props,
   }
   render(
@@ -51,6 +51,17 @@ describe('view mode', () => {
     expect(screen.getByText('https://github.com')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Pin to taskbar/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Hide from home screen/ })).toBeInTheDocument()
+  })
+
+  it('the star button toggles favorite state (issue #32)', async () => {
+    const h = mount()
+    await userEvent.click(screen.getByRole('button', { name: /Favorite$/ }))
+    expect(h.onToggleFavorite).toHaveBeenCalled()
+  })
+
+  it('a favorited bookmark shows the filled star', () => {
+    mount({ favorite: true })
+    expect(screen.getByRole('button', { name: /Favorited/ })).toBeInTheDocument()
   })
 
   it('pin and hide buttons call their handlers', async () => {
