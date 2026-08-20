@@ -141,6 +141,34 @@ describe('emoji picker', () => {
   })
 })
 
+describe('sub pages', () => {
+  const withSubs = {
+    subUrls: [
+      { id: 's1', name: 'Pulls', url: '/pulls', isDefault: true },
+      { id: 's2', name: 'Issues', url: '/issues' },
+    ],
+  }
+
+  it('view mode has no radio buttons — the default is a static tag (issue #24)', () => {
+    mount(withSubs)
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
+    expect(screen.getByText('default')).toBeInTheDocument()
+    expect(screen.getByText('Pulls')).toBeInTheDocument()
+  })
+
+  it('edit mode exposes the radios and Save persists a new default', async () => {
+    const h = mount(withSubs)
+    await enterEditMode()
+    const radios = screen.getAllByRole('radio')
+    expect(radios).toHaveLength(2)
+    await userEvent.click(radios[1])
+    await save()
+    const saved = h.onSave.mock.calls[0][0].subUrls
+    expect(saved.find((s) => s.id === 's2').isDefault).toBe(true)
+    expect(saved.find((s) => s.id === 's1').isDefault).toBeFalsy()
+  })
+})
+
 describe('deleting', () => {
   it('asks for confirmation before deleting', async () => {
     const h = mount()

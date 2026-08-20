@@ -39,15 +39,19 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
       {editMode && (
         <span className="app-info-suburl-drag" {...attributes} {...listeners}>⠿</span>
       )}
-      <input
-        type="radio"
-        name="defaultSubUrl"
-        checked={sub.isDefault}
-        onChange={() => onSetDefault(sub.id)}
-        onClick={() => { if (sub.isDefault) onSetDefault(null) }}
-        className="app-info-suburl-radio"
-        title="Set as default"
-      />
+      {editMode && (
+        // Changing the default only persists through Save, so the radio is
+        // an edit-mode control; view mode shows a static tag instead
+        <input
+          type="radio"
+          name="defaultSubUrl"
+          checked={sub.isDefault}
+          onChange={() => onSetDefault(sub.id)}
+          onClick={() => { if (sub.isDefault) onSetDefault(null) }}
+          className="app-info-suburl-radio"
+          title="Set as default"
+        />
+      )}
       <a
         className="app-info-suburl-info"
         href={resolvedUrl}
@@ -55,7 +59,12 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
         rel="noopener noreferrer"
         title={resolvedUrl}
       >
-        <span className="app-info-suburl-name">{sub.name}</span>
+        <span className="app-info-suburl-name">
+          {sub.name}
+          {!editMode && sub.isDefault && (
+            <span className="app-info-suburl-default-tag" title="Opens when you click the bookmark">default</span>
+          )}
+        </span>
         <span className="app-info-suburl-url">{sub.url}</span>
       </a>
       {editMode && (
