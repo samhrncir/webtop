@@ -78,6 +78,7 @@ describe('saving', () => {
       url: 'https://github.com',
       icon: null,
       emoji: null,
+      iconBg: null,
       subUrls: [],
       aliases: ['gh'],
       tags: ['dev'],
@@ -138,6 +139,29 @@ describe('emoji picker', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Use image icon' }))
     await save()
     expect(h.onSave.mock.calls[0][0].emoji).toBeNull()
+  })
+})
+
+describe('icon background darkness (issue #31)', () => {
+  it('defaults to the theme tile and saves null', async () => {
+    const h = mount()
+    await enterEditMode()
+    expect(screen.queryByRole('button', { name: 'Theme default' })).not.toBeInTheDocument()
+    await save()
+    expect(h.onSave.mock.calls[0][0].iconBg).toBeNull()
+  })
+
+  it('the slider stores a darkness and Theme default clears it back', async () => {
+    const h = mount()
+    await enterEditMode()
+    fireEvent.change(screen.getByLabelText('Icon background darkness'), { target: { value: '80' } })
+    await save()
+    expect(h.onSave.mock.calls[0][0].iconBg).toBe(80)
+
+    await enterEditMode()
+    await userEvent.click(screen.getByRole('button', { name: 'Theme default' }))
+    await save()
+    expect(h.onSave.mock.calls[1][0].iconBg).toBeNull()
   })
 })
 

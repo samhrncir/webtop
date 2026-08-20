@@ -217,6 +217,26 @@
   cursor: default;
 }
 
+/* Icon background darkness */
+.app-info-iconbg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-info-iconbg-row input[type='range'] {
+  flex: 1;
+  min-width: 60px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.app-info-iconbg-end {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
 /* Emoji icon field */
 .app-info-emoji-row {
   display: flex;

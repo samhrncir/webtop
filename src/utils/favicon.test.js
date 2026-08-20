@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   getFaviconUrl, isSafeIconUrl, normalizeEmoji, getItemEmoji,
   getIconCandidates, getInitialLetter, getColorForName,
+  normalizeIconBg, iconBgStyle,
 } from './favicon.js'
 
 describe('getFaviconUrl', () => {
@@ -75,6 +76,21 @@ describe('getIconCandidates', () => {
   })
   it('is empty when there is nothing to try', () => {
     expect(getIconCandidates({})).toEqual([])
+  })
+})
+
+describe('icon tile background override', () => {
+  it('maps 0..100 to white..black and clamps out-of-range values', () => {
+    expect(iconBgStyle({ iconBg: 0 })).toEqual({ background: 'hsl(0, 0%, 100%)' })
+    expect(iconBgStyle({ iconBg: 100 })).toEqual({ background: 'hsl(0, 0%, 0%)' })
+    expect(iconBgStyle({ iconBg: 250 })).toEqual({ background: 'hsl(0, 0%, 0%)' })
+    expect(normalizeIconBg(-5)).toBe(0)
+  })
+
+  it('is undefined (theme default) when unset or junk', () => {
+    expect(iconBgStyle({})).toBeUndefined()
+    expect(iconBgStyle({ iconBg: null })).toBeUndefined()
+    expect(iconBgStyle({ iconBg: 'junk' })).toBeUndefined()
   })
 })
 

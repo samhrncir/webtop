@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName, iconBgStyle } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import './FolderIcon.css'
 
@@ -28,7 +28,7 @@ function PreviewCell({ bookmark }) {
 
   // Same neutral surface as image icons on the grid — no per-name colour
   return (
-    <div className="folder-preview-cell folder-preview-cell--image">
+    <div className="folder-preview-cell folder-preview-cell--image" style={iconBgStyle(bookmark)}>
       <img src={iconSrc} alt="" onError={onIconError} />
     </div>
   )

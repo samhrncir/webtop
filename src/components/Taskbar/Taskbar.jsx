@@ -16,7 +16,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName, iconBgStyle } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import { useDndZoom } from '../../utils/dndZoom.js'
@@ -58,6 +58,7 @@ function Favicon({ item, className }) {
   return (
     <img
       className={className}
+      style={iconBgStyle(item)}
       src={iconSrc}
       alt={item.name}
       onError={onIconError}

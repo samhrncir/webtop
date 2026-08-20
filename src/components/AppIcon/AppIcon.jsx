@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react'
-import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { getInitialLetter, getColorForName, iconBgStyle } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
 import './AppIcon.css'
@@ -95,6 +95,7 @@ export default function AppIcon({ item, editMode, onDelete, onRename, onOpen, on
         ) : iconSrc ? (
           <img
             className="app-icon-favicon"
+            style={iconBgStyle(item)}
             src={iconSrc}
             alt={item.name}
             onError={onIconError}
