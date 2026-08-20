@@ -83,16 +83,27 @@ export default function SettingsPage({
   // ---- AI Chat target ----
   const bookmarks = useMemo(() => (data ? flattenBookmarks(data) : []), [data])
   const aiChat = resolveAiChat(settings, data)
-  // What the dropdown shows: a bookmark id, CUSTOM_URL, or '' for not set.
-  // Kept locally so picking "Custom URL…" holds while the URL is still empty.
-  const [chatMode, setChatMode] = useState(() =>
-    settings.aiChatBookmarkId ? settings.aiChatBookmarkId : settings.aiChatUrl ? CUSTOM_URL : ''
-  )
-  // A picked bookmark that has since been deleted shows as "Not set"
-  const selectValue =
-    chatMode === CUSTOM_URL || chatMode === '' || bookmarks.some(({ item }) => item.id === chatMode)
-      ? chatMode
-      : ''
+  // What the dropdown shows: a bookmark id, "bookmarkId::subUrlId" for one
+  // of its sub pages, CUSTOM_URL, or '' for not set. Kept locally so picking
+  // "Custom URL…" holds while the URL is still empty.
+  const [chatMode, setChatMode] = useState(() => {
+    if (settings.aiChatBookmarkId) {
+      return settings.aiChatSubUrlId
+        ? `${settings.aiChatBookmarkId}::${settings.aiChatSubUrlId}`
+        : settings.aiChatBookmarkId
+    }
+    return settings.aiChatUrl ? CUSTOM_URL : ''
+  })
+  // A picked bookmark that has since been deleted shows as "Not set"; a
+  // deleted sub page falls back to its bookmark
+  const selectValue = (() => {
+    if (chatMode === CUSTOM_URL || chatMode === '') return chatMode
+    const [bmId, subId] = chatMode.split('::')
+    const entry = bookmarks.find(({ item }) => item.id === bmId)
+    if (!entry) return ''
+    if (subId && !entry.item.subUrls?.some((s) => s.id === subId)) return bmId
+    return chatMode
+  })()
   const [urlDraft, setUrlDraft] = useState(settings.aiChatUrl || '')
   const urlDraftInvalid = urlDraft.trim().length > 0 && !normalizeChatUrl(urlDraft)
 
@@ -100,10 +111,14 @@ export default function SettingsPage({
     setChatMode(value)
     if (value === CUSTOM_URL) {
       setSetting('aiChatBookmarkId', null)
+      setSetting('aiChatSubUrlId', null)
     } else if (value) {
-      setSetting('aiChatBookmarkId', value)
+      const [bmId, subId] = value.split('::')
+      setSetting('aiChatBookmarkId', bmId)
+      setSetting('aiChatSubUrlId', subId || null)
     } else {
       setSetting('aiChatBookmarkId', null)
+      setSetting('aiChatSubUrlId', null)
       setSetting('aiChatUrl', '')
       setUrlDraft('')
     }
@@ -270,11 +285,16 @@ export default function SettingsPage({
                   <option value="">Not set</option>
                   {bookmarks.length > 0 && (
                     <optgroup label="Bookmarks">
-                      {bookmarks.map(({ item, pageIdx, inFolder }) => (
+                      {bookmarks.flatMap(({ item, pageIdx, inFolder }) => [
                         <option key={item.id} value={item.id}>
                           {item.name} — Page {pageIdx + 1}{inFolder ? ` · ${inFolder}` : ''}
-                        </option>
-                      ))}
+                        </option>,
+                        ...(item.subUrls ?? []).map((sub) => (
+                          <option key={`${item.id}::${sub.id}`} value={`${item.id}::${sub.id}`}>
+                            {'\u2003\u21b3 '}{item.name} · {sub.name}
+                          </option>
+                        )),
+                      ])}
                     </optgroup>
                   )}
                   <option value={CUSTOM_URL}>Custom URL…</option>

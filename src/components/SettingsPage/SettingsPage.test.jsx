@@ -9,7 +9,10 @@ import { SettingsProvider } from '../../context/SettingsContext.jsx'
 const data = {
   pages: [{
     id: 'p1',
-    items: [{ id: 'bm1', type: 'bookmark', name: 'Claude', url: 'https://claude.ai' }],
+    items: [{
+      id: 'bm1', type: 'bookmark', name: 'Claude', url: 'https://claude.ai',
+      subUrls: [{ id: 's1', name: 'New chat', url: '/new', isDefault: true }],
+    }],
   }],
 }
 
@@ -80,6 +83,22 @@ describe('AI chat target', () => {
     fireEvent.change(screen.getByLabelText('Default AI chat'), { target: { value: 'bm1' } })
     expect(storedSettings().aiChatBookmarkId).toBe('bm1')
     expect(screen.getByText(/AI Chat button opens Claude/)).toBeInTheDocument()
+  })
+
+  it('a bookmark sub page can be the target (issue #26)', () => {
+    mount()
+    fireEvent.change(screen.getByLabelText('Default AI chat'), { target: { value: 'bm1::s1' } })
+    expect(storedSettings().aiChatBookmarkId).toBe('bm1')
+    expect(storedSettings().aiChatSubUrlId).toBe('s1')
+    expect(screen.getByText(/AI Chat button opens Claude · New chat/)).toBeInTheDocument()
+  })
+
+  it('picking the plain bookmark clears a previously picked sub page', () => {
+    mount()
+    fireEvent.change(screen.getByLabelText('Default AI chat'), { target: { value: 'bm1::s1' } })
+    fireEvent.change(screen.getByLabelText('Default AI chat'), { target: { value: 'bm1' } })
+    expect(storedSettings().aiChatBookmarkId).toBe('bm1')
+    expect(storedSettings().aiChatSubUrlId).toBeNull()
   })
 
   it('the custom URL flow normalizes on commit and flags junk', async () => {

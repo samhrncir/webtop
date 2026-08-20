@@ -10,8 +10,10 @@ const DEFAULTS = {
   // Whole-UI scale in percent (CSS zoom on the app root), independent of
   // the browser's own zoom so bookmarks can be big without pages being big
   uiScale: 100,
-  // AI Chat toolbar button target: a bookmark id takes precedence, else a URL
+  // AI Chat toolbar button target: a bookmark id takes precedence, else a URL.
+  // aiChatSubUrlId optionally narrows the bookmark to one of its sub pages.
   aiChatBookmarkId: null,
+  aiChatSubUrlId: null,
   aiChatUrl: '',
 }
 
