@@ -66,6 +66,31 @@ describe('appearance', () => {
     expect(screen.queryByRole('button', { name: 'Reset' })).not.toBeInTheDocument()
   })
 
+  it('the stepper buttons nudge the display scale by one step (issue #33)', async () => {
+    mount()
+    await userEvent.click(screen.getByRole('button', { name: 'Increase display scale' }))
+    expect(storedSettings().uiScale).toBe(105)
+    expect(screen.getByText('105%')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Decrease display scale' }))
+    expect(storedSettings().uiScale).toBe(100)
+  })
+
+  it('the steppers disable at the slider bounds', () => {
+    mount()
+    fireEvent.change(screen.getByLabelText('Display scale'), { target: { value: '75' } })
+    expect(screen.getByRole('button', { name: 'Decrease display scale' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Display scale'), { target: { value: '200' } })
+    expect(screen.getByRole('button', { name: 'Increase display scale' })).toBeDisabled()
+  })
+
+  it('grid columns get steppers too, stepping by one column', async () => {
+    mount()
+    await userEvent.click(screen.getByRole('button', { name: 'Increase maximum grid columns' }))
+    expect(storedSettings().gridMaxColumns).toBe(5)
+    fireEvent.change(screen.getByLabelText('Maximum grid columns'), { target: { value: '4' } })
+    expect(screen.getByRole('button', { name: 'Decrease maximum grid columns' })).toBeDisabled()
+  })
+
   it('the grid columns slider is clamped to its 4-12 range', () => {
     mount()
     const slider = screen.getByLabelText('Maximum grid columns')

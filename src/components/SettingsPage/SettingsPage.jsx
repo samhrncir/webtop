@@ -42,6 +42,44 @@ function SegmentedControl({ options, value, onChange }) {
   )
 }
 
+// Range input flanked by -/+ steppers for single-step nudges (issue #33)
+function StepperSlider({ min, max, step, value, onChange, ariaLabel, format = (v) => v, children }) {
+  const clamp = (v) => Math.min(max, Math.max(min, v))
+  return (
+    <div className="settings-slider">
+      <button
+        type="button"
+        className="settings-slider-step"
+        onClick={() => onChange(clamp(value - step))}
+        disabled={value <= min}
+        aria-label={`Decrease ${ariaLabel.toLowerCase()}`}
+      >
+        −
+      </button>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={ariaLabel}
+      />
+      <button
+        type="button"
+        className="settings-slider-step"
+        onClick={() => onChange(clamp(value + step))}
+        disabled={value >= max}
+        aria-label={`Increase ${ariaLabel.toLowerCase()}`}
+      >
+        +
+      </button>
+      <span className="settings-slider-value">{format(value)}</span>
+      {children}
+    </div>
+  )
+}
+
 function Toggle({ value, onChange }) {
   return (
     <button
@@ -204,17 +242,15 @@ export default function SettingsPage({
                     : `${clampUiScale(settings.uiScale)}% — BrowserHome only; pages you open are unaffected`
                 }
               >
-                <div className="settings-slider">
-                  <input
-                    type="range"
-                    min={UI_SCALE_MIN}
-                    max={UI_SCALE_MAX}
-                    step={UI_SCALE_STEP}
-                    value={clampUiScale(settings.uiScale)}
-                    onChange={(e) => setSetting('uiScale', clampUiScale(e.target.value))}
-                    aria-label="Display scale"
-                  />
-                  <span className="settings-slider-value">{clampUiScale(settings.uiScale)}%</span>
+                <StepperSlider
+                  min={UI_SCALE_MIN}
+                  max={UI_SCALE_MAX}
+                  step={UI_SCALE_STEP}
+                  value={clampUiScale(settings.uiScale)}
+                  onChange={(v) => setSetting('uiScale', clampUiScale(v))}
+                  ariaLabel="Display scale"
+                  format={(v) => `${v}%`}
+                >
                   {clampUiScale(settings.uiScale) !== 100 && (
                     <button
                       className="settings-action-btn settings-slider-reset"
@@ -224,7 +260,7 @@ export default function SettingsPage({
                       Reset
                     </button>
                   )}
-                </div>
+                </StepperSlider>
               </SettingsRow>
 
               <div className="settings-divider" />
@@ -233,18 +269,14 @@ export default function SettingsPage({
                 label="Grid Columns"
                 description={`Up to ${clampGridColumns(settings.gridMaxColumns)} columns of apps — fewer if the window is narrow, never fewer than ${GRID_MIN_COLUMNS}`}
               >
-                <div className="settings-slider">
-                  <input
-                    type="range"
-                    min={GRID_MIN_COLUMNS}
-                    max={GRID_MAX_COLUMNS}
-                    step={1}
-                    value={clampGridColumns(settings.gridMaxColumns)}
-                    onChange={(e) => setSetting('gridMaxColumns', clampGridColumns(e.target.value))}
-                    aria-label="Maximum grid columns"
-                  />
-                  <span className="settings-slider-value">{clampGridColumns(settings.gridMaxColumns)}</span>
-                </div>
+                <StepperSlider
+                  min={GRID_MIN_COLUMNS}
+                  max={GRID_MAX_COLUMNS}
+                  step={1}
+                  value={clampGridColumns(settings.gridMaxColumns)}
+                  onChange={(v) => setSetting('gridMaxColumns', clampGridColumns(v))}
+                  ariaLabel="Maximum grid columns"
+                />
               </SettingsRow>
 
               <div className="settings-divider" />
