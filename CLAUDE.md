@@ -100,6 +100,25 @@ Rules for both agents:
 - CI (`.github/workflows/ci.yml`) runs `npm test` + `npm run build` on every
   PR; a red check blocks merging.
 
+## UI shells
+
+`src/App.jsx` picks one of two UI shells after auth (`src/utils/shell.js`):
+
+- **`src/mobile/MobileShell.jsx`** — touch-first UI. Served to the Android
+  app always, and to browsers whose primary pointer is coarse (phones,
+  tablets). All touch interaction logic belongs in this tree.
+- **`src/shells/DesktopShell.jsx`** — mouse/keyboard UI for fine-pointer
+  browsers (including touchscreen laptops).
+
+Both currently render the shared `src/shells/HomescreenApp.jsx`
+composition; mobile-first screens land in `src/mobile/` one at a time, and
+touch plumbing moves out of the shared components as they do. The shells
+are lazy chunks — never import one from the other's tree.
+
+Override for development: append `?shell=mobile` or `?shell=desktop` to
+the URL (works in `npm run dev` + Chrome device mode; decided once per
+page load).
+
 ## Android app (Capacitor)
 
 The web app ships as an Android app via Capacitor: the built `dist/` is
