@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -98,6 +98,9 @@ export default function HomeScreen({
   const touchStartY = useRef(null)
   const dragStartPageId = useRef(null)
   const pageNavTimerRef = useRef(null)
+  // A dnd drag that travelled horizontally would otherwise also register as
+  // a page swipe on touchend, teleporting the view right after the drop
+  const dragOccurredRef = useRef(false)
 
   const page = data.pages[currentPage]
   const items = page ? page.items : []
@@ -173,6 +176,7 @@ export default function HomeScreen({
 
   // Touch swipe for page navigation
   const handleTouchStart = useCallback((e) => {
+    dragOccurredRef.current = false
     touchStartX.current = e.touches[0].clientX
     touchStartY.current = e.touches[0].clientY
   }, [])
@@ -180,6 +184,11 @@ export default function HomeScreen({
   const handleTouchEnd = useCallback((e) => {
     if (filtering) return
     if (touchStartX.current === null) return
+    if (dragOccurredRef.current) {
+      touchStartX.current = null
+      touchStartY.current = null
+      return
+    }
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
@@ -228,7 +237,7 @@ export default function HomeScreen({
   }, [activeDragId, currentPage, data.pages.length, setCurrentPage])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   )
 
@@ -247,6 +256,7 @@ export default function HomeScreen({
   const sortStrategy = isOverFolder ? () => [] : rectSortingStrategy
 
   const handleDragStart = useCallback(({ active }) => {
+    dragOccurredRef.current = true
     setActiveDragId(active.id)
     dragStartPageId.current = pageId
   }, [pageId])

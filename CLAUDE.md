@@ -99,3 +99,33 @@ Rules for both agents:
   when no env credentials exist, so the whole data layer is testable offline.
 - CI (`.github/workflows/ci.yml`) runs `npm test` + `npm run build` on every
   PR; a red check blocks merging.
+
+## Android app (Capacitor)
+
+The web app ships as an Android app via Capacitor: the built `dist/` is
+bundled into a native WebView shell in `android/` (a committed Gradle
+project). `capacitor.config.json` holds the app id
+(`com.samhrncir.browserhome`) and shell settings.
+
+```powershell
+npm run build            # build web assets (reads .env for Supabase vars)
+npx cap sync android     # copy dist/ + plugin config into android/
+cd android; $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'; .\gradlew assembleDebug
+# -> android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+- **CI**: `.github/workflows/android.yml` builds the debug APK on pushes to
+  main (and manually via Run workflow) and uploads it as an artifact.
+  It reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from repo Actions
+  secrets; without them the APK runs local-only (no sign-in/sync).
+- **Icons/splash** are generated from `assets/logo.svg` with
+  `npx @capacitor/assets generate --android` (plus the background-color
+  flags in git history) — rerun after changing the logo.
+- **Safe areas**: the shell injects `--safe-area-inset-*`; `src/App.css`
+  pads `.app` with them (inert in desktop browsers).
+- External links (bookmarks) open in the system browser — that is
+  Capacitor's default for non-app origins, not something to "fix".
+- On the native app, Settings > Export routes through the system share
+  sheet (@capacitor/filesystem + @capacitor/share; WebViews ignore anchor
+  downloads); the web build keeps the plain download. Import accepts
+  blank/octet-stream MIME types because Android pickers mislabel JSON.

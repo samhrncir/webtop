@@ -413,6 +413,17 @@ describe('persistence', () => {
   })
 })
 
+describe('mobile lifecycle', () => {
+  it('re-syncs when the app returns to the foreground (visibilitychange)', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener')
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
+    const { unmount } = mount({ pages: [page('p1', 'a')], items: [] })
+    expect(addSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function))
+    unmount()
+    expect(removeSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function))
+  })
+})
+
 describe('edit mode', () => {
   it('toggleEditMode flips the flag', () => {
     const { result } = mount({ pages: [page('p1', 'a')], items: [] })

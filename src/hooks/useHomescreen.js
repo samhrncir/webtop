@@ -316,10 +316,15 @@ export function useHomescreen() {
     releasedRef.current = false // reset for StrictMode's dev remount
     reconcile()
     const handleOnline = () => reconcile()
+    // Mobile apps live in the background for days without an 'online' event;
+    // re-sync whenever the app comes back to the foreground
+    const handleVisible = () => { if (!document.hidden) reconcile() }
     window.addEventListener('online', handleOnline)
+    document.addEventListener('visibilitychange', handleVisible)
     return () => {
       releasedRef.current = true
       window.removeEventListener('online', handleOnline)
+      document.removeEventListener('visibilitychange', handleVisible)
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current)
     }
   }, [reconcile])

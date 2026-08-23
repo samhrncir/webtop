@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react'
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -13,7 +13,7 @@ import {
   rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { CSS, getEventCoordinates } from '@dnd-kit/utilities'
 import AppIcon from '../AppIcon/AppIcon.jsx'
 import { useDndZoom } from '../../utils/dndZoom.js'
 import './FolderOverlay.css'
@@ -32,7 +32,9 @@ function SortableBookmark({ bookmark, editMode, onDelete, onOpen, onInfoOpen, fr
     transform: frozen ? undefined : CSS.Transform.toString(transform),
     transition: frozen ? undefined : transition,
     opacity: isDragging ? 0.25 : 1,
-    touchAction: 'none',
+    // 'manipulation' (not 'none') so a touch that starts on an item can still
+    // scroll the folder grid; TouchSensor's press-delay owns actual drags
+    touchAction: 'manipulation',
   }
 
   return (
@@ -83,7 +85,7 @@ export default function FolderOverlay({
   }, [handleKeyDown])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } })
   )
 
@@ -96,15 +98,18 @@ export default function FolderOverlay({
   const handleDragStart = useCallback(({ active, activatorEvent }) => {
     setDraggingId(active.id)
     setPointerOutside(false)
-    if (activatorEvent) {
-      lastPointer.current = { x: activatorEvent.clientX, y: activatorEvent.clientY }
-    }
+    // getEventCoordinates handles TouchEvent too (touches[0]) — reading
+    // .clientX directly made every coordinate NaN on touch and drag-out
+    // eject never fired
+    const coords = activatorEvent && getEventCoordinates(activatorEvent)
+    if (coords) lastPointer.current = coords
   }, [])
 
   const handleDragMove = useCallback(({ activatorEvent, delta }) => {
-    if (!activatorEvent) return
-    const x = activatorEvent.clientX + delta.x
-    const y = activatorEvent.clientY + delta.y
+    const coords = activatorEvent && getEventCoordinates(activatorEvent)
+    if (!coords) return
+    const x = coords.x + delta.x
+    const y = coords.y + delta.y
     lastPointer.current = { x, y }
     setPointerOutside(isOutsideModal(x, y))
   }, [isOutsideModal])
