@@ -21,6 +21,16 @@ if (!window.matchMedia) {
   })
 }
 
+// The mobile pager scrolls its container programmatically
+if (!Element.prototype.scrollTo) {
+  Element.prototype.scrollTo = function (opts) {
+    if (opts && typeof opts === 'object') {
+      if (typeof opts.left === 'number') this.scrollLeft = opts.left
+      if (typeof opts.top === 'number') this.scrollTop = opts.top
+    }
+  }
+}
+
 // SearchBar keeps the active result row in view
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {}
