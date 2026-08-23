@@ -110,10 +110,13 @@ Rules for both agents:
 - **`src/shells/DesktopShell.jsx`** — mouse/keyboard UI for fine-pointer
   browsers (including touchscreen laptops).
 
-Both currently render the shared `src/shells/HomescreenApp.jsx`
-composition; mobile-first screens land in `src/mobile/` one at a time, and
-touch plumbing moves out of the shared components as they do. The shells
-are lazy chunks — never import one from the other's tree.
+The mobile shell owns its screens: a scroll-snap paged grid
+(`MobilePagedGrid`), a bottom search/settings/AI-chat bar
+(`MobileBottomBar`), and App Info restyled as a bottom sheet
+(`mobile.css`'s `.mobile-sheet-host`). It reuses leaf components
+(AppIcon, FolderIcon, Taskbar, overlays, SettingsPage) but composes them
+itself; `src/shells/HomescreenApp.jsx` is the desktop composition. The
+shells are lazy chunks — never import one from the other's tree.
 
 Override for development: append `?shell=mobile` or `?shell=desktop` to
 the URL (works in `npm run dev` + Chrome device mode; decided once per
