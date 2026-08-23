@@ -18,6 +18,9 @@ on:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,14 +37,11 @@ jobs:
       - run: npm ci
 
       - name: Warn when Supabase secrets are missing
-        if: ${{ secrets.VITE_SUPABASE_URL == '' }}
+        if: ${{ env.VITE_SUPABASE_URL == '' }}
         run: |
           echo "::warning::VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY secrets are not set — the APK will run local-only (no sign-in or sync). Add them under Settings > Secrets and variables > Actions."
 
       - name: Build web assets
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
       - name: Sync Capacitor
