@@ -14,17 +14,17 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**'],
-      exclude: ['src/main.jsx', 'src/test/**'],
+      exclude: ['src/main.jsx', 'src/test/**', '**/.claude/**'],
       // Ratchet: `npm test` fails when coverage drops below these floors, so
       // an untested feature fails CI. autoUpdate raises the floors in this
       // file whenever a local run beats them — commit the bump with your PR;
       // the floors only ever go up.
       thresholds: {
         autoUpdate: true,
-        statements: 60.86,
-        branches: 55.15,
-        functions: 56.72,
-        lines: 64.46,
+        statements: 61.13,
+        branches: 55.71,
+        functions: 56.9,
+        lines: 64.67,
       },
     },
   },

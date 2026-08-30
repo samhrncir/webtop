@@ -60,6 +60,7 @@ export default function HomescreenApp() {
         <div className="app-home">
           <SearchBar
             data={data}
+            typeToFocus={view === 'home'}
             activeTag={activeTag}
             onSelectTag={setActiveTag}
             onNavigateToPage={setCurrentPage}

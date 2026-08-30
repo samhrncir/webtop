@@ -33,7 +33,7 @@ function ResultIcon({ item }) {
   )
 }
 
-export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSelectTag, activeTag = null }) {
+export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSelectTag, activeTag = null, typeToFocus = false }) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
@@ -114,6 +114,29 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
       setActiveIndex((i) => (i - 1 + allResults.length) % allResults.length)
     }
   }
+
+  // Global type-to-search: typing anywhere on the home screen (on first
+  // load or after refocusing the tab) lands in the search box without
+  // clicking it first. Focusing during keydown is enough — the browser then
+  // delivers the keystroke itself to the newly focused input, so the first
+  // character is never lost and never needs to be re-inserted by hand.
+  useEffect(() => {
+    if (!typeToFocus) return
+    const handler = (e) => {
+      if (e.defaultPrevented) return
+      // Modified keys are shortcuts, not typing (Shift stays: capitals)
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      // Printable characters only; a stray leading space would only scroll
+      if (e.key.length !== 1 || e.key === ' ') return
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return
+      // A modal owns the keyboard while it's open
+      if (document.querySelector('.add-modal-backdrop, .app-info-backdrop, .folder-overlay-backdrop, .confirm-backdrop')) return
+      inputRef.current?.focus()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [typeToFocus])
 
   // Keep the active row visible inside the scrolling overlay
   useEffect(() => {
