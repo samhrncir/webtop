@@ -21,10 +21,10 @@ export default defineConfig({
       // the floors only ever go up.
       thresholds: {
         autoUpdate: true,
-        statements: 61.13,
-        branches: 55.71,
-        functions: 56.9,
-        lines: 64.67,
+        statements: 61.25,
+        branches: 55.87,
+        functions: 57.08,
+        lines: 64.73,
       },
     },
   },

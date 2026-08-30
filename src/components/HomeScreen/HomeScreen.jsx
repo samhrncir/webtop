@@ -1,3 +1,4 @@
+import { gutterWheelHandler } from '../../utils/gutterScroll.js'
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import {
   DndContext,
@@ -396,6 +397,7 @@ export default function HomeScreen({
   // The chip row is absolutely positioned, so the grid pads down to clear it
   // The grid's scrollbar only shows while scrolling; the class drives a
   // CSS fade and is dropped a moment after the last scroll event
+  const gridRef = useRef(null)
   const [gridScrolling, setGridScrolling] = useState(false)
   const scrollIdleTimer = useRef(null)
   const handleGridScroll = useCallback(() => {
@@ -451,7 +453,7 @@ export default function HomeScreen({
       <TagFilterBar tags={tagList} favoritesCount={favoritesCount} activeTag={activeTag} onSelect={setActiveTag} />
 
       {/* Grid */}
-      <div className={`homescreen-grid-area${activeDragId ? ' is-dragging' : ''}`}>
+      <div className={`homescreen-grid-area${activeDragId ? ' is-dragging' : ''}`} onWheel={gutterWheelHandler(gridRef)}>
         {!filtering && currentPage > 0 && (
           <div className="page-nav-zone page-nav-zone--left">
             <button
@@ -495,7 +497,7 @@ export default function HomeScreen({
         {filtering ? (
           // Alphabetical, folder-flattened: order is derived, so there is
           // nothing meaningful to drag against — no DnD here
-          <div className={gridClassName} style={gridStyle} onScroll={handleGridScroll}>
+          <div ref={gridRef} className={gridClassName} style={gridStyle} onScroll={handleGridScroll}>
             {displayItems.map((item) => (
               <div key={item.id} className="sortable-item">
                 <AppIcon
@@ -520,7 +522,7 @@ export default function HomeScreen({
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={items.map((i) => i.id)} strategy={sortStrategy}>
-              <div className={gridClassName} style={gridStyle} onScroll={handleGridScroll}>
+              <div ref={gridRef} className={gridClassName} style={gridStyle} onScroll={handleGridScroll}>
                 {items.map((item) => {
                   const isOverFolder = overId === item.id && item.type === 'folder' && activeDragId !== item.id
                   return (
