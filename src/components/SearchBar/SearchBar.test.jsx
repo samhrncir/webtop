@@ -138,3 +138,51 @@ describe('keyboard navigation', () => {
     expect(screen.queryByRole('option')).not.toBeInTheDocument()
   })
 })
+
+describe('SearchBar global type-to-search', () => {
+  it('typing anywhere focuses the search input when typeToFocus is on', async () => {
+    mount({ typeToFocus: true })
+    expect(input()).not.toHaveFocus()
+    await userEvent.keyboard('git')
+    expect(input()).toHaveFocus()
+    expect(input()).toHaveValue('git')
+  })
+
+  it('stays off by default', () => {
+    mount()
+    fireEvent.keyDown(document.body, { key: 'g' })
+    expect(input()).not.toHaveFocus()
+  })
+
+  it('ignores shortcuts and non-printable keys', () => {
+    mount({ typeToFocus: true })
+    fireEvent.keyDown(document.body, { key: 'g', ctrlKey: true })
+    fireEvent.keyDown(document.body, { key: 'g', metaKey: true })
+    fireEvent.keyDown(document.body, { key: 'g', altKey: true })
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+    fireEvent.keyDown(document.body, { key: 'Tab' })
+    fireEvent.keyDown(document.body, { key: ' ' })
+    expect(input()).not.toHaveFocus()
+  })
+
+  it('leaves typing in another field alone', async () => {
+    mount({ typeToFocus: true })
+    const other = document.createElement('input')
+    document.body.appendChild(other)
+    other.focus()
+    await userEvent.keyboard('hello')
+    expect(other).toHaveValue('hello')
+    expect(input()).not.toHaveFocus()
+    other.remove()
+  })
+
+  it('does not steal keys while a modal is open', () => {
+    mount({ typeToFocus: true })
+    const backdrop = document.createElement('div')
+    backdrop.className = 'add-modal-backdrop'
+    document.body.appendChild(backdrop)
+    fireEvent.keyDown(document.body, { key: 'g' })
+    expect(input()).not.toHaveFocus()
+    backdrop.remove()
+  })
+})
