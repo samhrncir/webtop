@@ -28,7 +28,7 @@ const baseItem = {
 function mount(item = {}, props = {}) {
   const handlers = {
     onClose: vi.fn(), onSave: vi.fn(), onDelete: vi.fn(),
-    onTogglePin: vi.fn(), onToggleFavorite: vi.fn(), onHide: vi.fn(),
+    onTogglePin: vi.fn(), onToggleFavorite: vi.fn(), onToggleAccount: vi.fn(), onHide: vi.fn(),
     ...props,
   }
   render(
@@ -93,6 +93,7 @@ describe('saving', () => {
       subUrls: [],
       aliases: ['gh'],
       tags: ['dev'],
+      accountClosed: null,
     })
   })
 
@@ -201,6 +202,48 @@ describe('sub pages', () => {
     const saved = h.onSave.mock.calls[0][0].subUrls
     expect(saved.find((s) => s.id === 's2').isDefault).toBe(true)
     expect(saved.find((s) => s.id === 's1').isDefault).toBeFalsy()
+  })
+})
+
+describe('site account status', () => {
+  it('the quick action notes whether the user has an account', async () => {
+    const h = mount()
+    await userEvent.click(screen.getByRole('button', { name: /No account/ }))
+    expect(h.onToggleAccount).toHaveBeenCalled()
+  })
+
+  it('a bookmark with an account shows the button lit and a status badge', () => {
+    mount({ hasAccount: true })
+    expect(screen.getByRole('button', { name: /Have account/ })).toBeInTheDocument()
+    expect(screen.getByText('Has account')).toBeInTheDocument()
+  })
+
+  it('a closed account reads "Account closed" in view mode', () => {
+    mount({ hasAccount: true, accountClosed: true })
+    expect(screen.getByText('Account closed')).toBeInTheDocument()
+    expect(screen.queryByText('Has account')).not.toBeInTheDocument()
+  })
+
+  it('edit mode offers "Account closed" only when the account note is on', async () => {
+    mount()
+    await enterEditMode()
+    expect(screen.queryByLabelText('Account closed')).not.toBeInTheDocument()
+  })
+
+  it('checking "Account closed" in edit mode persists through Save', async () => {
+    const h = mount({ hasAccount: true })
+    await enterEditMode()
+    await userEvent.click(screen.getByLabelText('Account closed'))
+    await save()
+    expect(h.onSave.mock.calls[0][0].accountClosed).toBe(true)
+  })
+
+  it('unchecking it saves null so the flag clears from the content blob', async () => {
+    const h = mount({ hasAccount: true, accountClosed: true })
+    await enterEditMode()
+    await userEvent.click(screen.getByLabelText('Account closed'))
+    await save()
+    expect(h.onSave.mock.calls[0][0].accountClosed).toBeNull()
   })
 })
 

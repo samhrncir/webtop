@@ -91,6 +91,16 @@ describe('edit mode on mobile', () => {
     expect(window.open).not.toHaveBeenCalled()
   })
 
+  it('the sheet\'s account toggle notes an account and the badge appears', async () => {
+    mount(twoPages())
+    await userEvent.click(screen.getByRole('button', { name: /Edit/ }))
+    await userEvent.click(screen.getByText('alpha'))
+    await userEvent.click(screen.getByRole('button', { name: /No account/ }))
+    // The sheet reads the live item, so the toggle reflects immediately
+    expect(screen.getByRole('button', { name: /Have account/ })).toBeInTheDocument()
+    expect(screen.getByText('Has account')).toBeInTheDocument()
+  })
+
   it('hiding from the sheet removes the bookmark from the grid', async () => {
     mount(twoPages())
     await userEvent.click(screen.getByRole('button', { name: /Edit/ }))

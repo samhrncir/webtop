@@ -72,6 +72,7 @@ export default function HomeScreen({
   updateBookmark,
   togglePin,
   toggleFavorite,
+  toggleAccount,
   setHidden,
   reorderItems,
   moveItem,
@@ -351,6 +352,10 @@ export default function HomeScreen({
     if (appInfoItem) toggleFavorite(appInfoItem.id)
   }, [appInfoItem, toggleFavorite])
 
+  const handleToggleAccount = useCallback(() => {
+    if (appInfoItem) toggleAccount(appInfoItem.id)
+  }, [appInfoItem, toggleAccount])
+
   // Hiding removes the item from the homescreen data, so close the modal
   // explicitly rather than leaving a stale appInfoItem behind
   const handleHide = useCallback(() => {
@@ -622,6 +627,7 @@ export default function HomeScreen({
           onDelete={handleDeleteAppInfo}
           onTogglePin={handleTogglePin}
           onToggleFavorite={handleToggleFavorite}
+          onToggleAccount={handleToggleAccount}
           onHide={handleHide}
           tagSuggestions={tagList}
         />

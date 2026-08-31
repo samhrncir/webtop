@@ -36,7 +36,7 @@ export default function MobileShell() {
     data, currentPage, setCurrentPage,
     editMode, toggleEditMode,
     addBookmark, addFolder, deleteItem, renameItem, updateBookmark,
-    pinned, togglePin, reorderPinned, toggleFavorite,
+    pinned, togglePin, reorderPinned, toggleFavorite, toggleAccount,
     hidden, setHidden, trash, restorePage, restoreFolder,
     removeFromFolder, ejectFromFolder, reorderFolderItems,
     addPage, deletePage, importData, exportData, reorderItems,
@@ -193,6 +193,7 @@ export default function MobileShell() {
                 onDelete={handleDeleteAppInfo}
                 onTogglePin={() => togglePin(liveAppInfoItem.id)}
                 onToggleFavorite={() => toggleFavorite(liveAppInfoItem.id)}
+                onToggleAccount={() => toggleAccount(liveAppInfoItem.id)}
                 onHide={handleHide}
                 tagSuggestions={tagList.map((t) => t.tag)}
               />
