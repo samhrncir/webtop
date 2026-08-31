@@ -36,6 +36,7 @@ export default function HomescreenApp() {
     togglePin,
     reorderPinned,
     toggleFavorite,
+    toggleAccount,
     hidden,
     setHidden,
     trash,
@@ -81,6 +82,7 @@ export default function HomescreenApp() {
               updateBookmark={updateBookmark}
               togglePin={togglePin}
               toggleFavorite={toggleFavorite}
+              toggleAccount={toggleAccount}
               setHidden={setHidden}
               reorderItems={reorderItems}
               moveItem={moveItem}

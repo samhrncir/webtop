@@ -80,7 +80,7 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, onToggleFavorite, onHide, tagSuggestions = [] }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, onToggleFavorite, onToggleAccount, onHide, tagSuggestions = [] }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
@@ -98,6 +98,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
   const [aliases, setAliases] = useState(() => normalizeAliases(item.aliases))
   const [newAlias, setNewAlias] = useState('')
   const [tags, setTags] = useState(() => getTags(item))
+  const [accountClosed, setAccountClosed] = useState(!!item.accountClosed)
   const [editMode, setEditMode] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newSubName, setNewSubName] = useState('')
@@ -134,6 +135,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
     setAliases(normalizeAliases(item.aliases))
     setNewAlias('')
     setTags(getTags(item))
+    setAccountClosed(!!item.accountClosed)
     setEditMode(false)
     setShowAddForm(false)
     setNewSubName('')
@@ -155,10 +157,13 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
       // the key
       aliases: normalizeAliases(aliases),
       tags: normalizeTagList(tags),
+      // Only meaningful while the "have account" note is on — the quick
+      // action clears both together when toggled off
+      accountClosed: item.hasAccount && accountClosed ? true : null,
     })
     setEditMode(false)
     onClose()
-  }, [name, url, icon, emoji, iconBg, subUrls, aliases, tags, item, onSave, onClose])
+  }, [name, url, icon, emoji, iconBg, subUrls, aliases, tags, accountClosed, item, onSave, onClose])
 
   const handleDelete = useCallback(() => {
     if (window.confirm(`Delete "${item.name}"?`)) {
@@ -350,6 +355,16 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                       </button>
                     )}
                   </div>
+                  {item.hasAccount && (
+                    <label className="app-info-account-closed-row">
+                      <input
+                        type="checkbox"
+                        checked={accountClosed}
+                        onChange={(e) => setAccountClosed(e.target.checked)}
+                      />
+                      Account closed
+                    </label>
+                  )}
                 </>
               ) : (
                 <>
@@ -363,6 +378,11 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                   >
                     {url}
                   </a>
+                  {item.hasAccount && (
+                    <span className={`app-info-account-status${item.accountClosed ? ' closed' : ''}`}>
+                      {item.accountClosed ? 'Account closed' : 'Has account'}
+                    </span>
+                  )}
                 </>
               )}
             </div>
@@ -395,6 +415,16 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
               >
                 <span className="app-info-pin-icon">{item.favorite ? '★' : '☆'}</span>
                 {item.favorite ? 'Favorited' : 'Favorite'}
+              </button>
+            )}
+            {onToggleAccount && (
+              <button
+                className={`app-info-pin-btn${item.hasAccount ? ' pinned' : ''}`}
+                onClick={onToggleAccount}
+                title="Note whether you have an account on this site"
+              >
+                <span className="app-info-pin-icon">👤</span>
+                {item.hasAccount ? 'Have account' : 'No account'}
               </button>
             )}
             <button

@@ -158,6 +158,33 @@ describe('favorites', () => {
   })
 })
 
+describe('site accounts', () => {
+  it('toggleAccount notes that the user has an account on the site', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    act(() => result.current.toggleAccount('b1'))
+    expect(result.current.data.pages[0].items[0].hasAccount).toBe(true)
+    act(() => result.current.toggleAccount('b1'))
+    expect(result.current.data.pages[0].items[0].hasAccount).toBeUndefined()
+  })
+
+  it('toggling the note off also forgets that the account was closed', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a')],
+      items: [bm('b1', 'p1', 'a', { hasAccount: true, accountClosed: true })],
+    })
+    act(() => result.current.toggleAccount('b1'))
+    const item = result.current.data.pages[0].items[0]
+    expect(item.hasAccount).toBeUndefined()
+    expect(item.accountClosed).toBeUndefined()
+  })
+
+  it('only bookmarks can carry the account note', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [folder('f1', 'p1', 'a')] })
+    act(() => result.current.toggleAccount('f1'))
+    expect(result.current.data.pages[0].items[0].hasAccount).toBeUndefined()
+  })
+})
+
 describe('editing bookmarks', () => {
   it('addBookmark appends to the current page', () => {
     const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })

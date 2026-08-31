@@ -688,6 +688,22 @@ export function useHomescreen() {
     applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
   }, [applyRowChanges])
 
+  // "Has account" is a per-site note toggled from App Info. Whether that
+  // account was later closed only means anything while the note exists, so
+  // toggling the note off clears the closed flag with it.
+  const toggleAccount = useCallback((itemId) => {
+    const target = liveItem(rowsRef.current, itemId)
+    if (!target || target.type !== 'bookmark') return
+    const content = { ...target.content }
+    if (content.hasAccount) {
+      delete content.hasAccount
+      delete content.accountClosed
+    } else {
+      content.hasAccount = true
+    }
+    applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
+  }, [applyRowChanges])
+
   const reorderPinned = useCallback((oldIndex, newIndex) => {
     const list = livePinned(rowsRef.current)
     const moved = list[oldIndex]
@@ -712,6 +728,7 @@ export function useHomescreen() {
     togglePin,
     reorderPinned,
     toggleFavorite,
+    toggleAccount,
     hidden,
     setHidden,
     trash,
