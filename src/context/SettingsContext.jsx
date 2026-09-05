@@ -15,6 +15,11 @@ const DEFAULTS = {
   aiChatBookmarkId: null,
   aiChatSubUrlId: null,
   aiChatUrl: '',
+  // Home screen tag chips: 'top' shows the homeTagsMax most-used tags,
+  // 'chosen' shows exactly homeTagsChosen; the rest sit behind a +N more menu
+  homeTagsMode: 'top',
+  homeTagsMax: 5,
+  homeTagsChosen: [],
 }
 
 export const GRID_MIN_COLUMNS = 4
@@ -23,6 +28,20 @@ export const GRID_MAX_COLUMNS = 12
 export const UI_SCALE_MIN = 75
 export const UI_SCALE_MAX = 200
 export const UI_SCALE_STEP = 5
+
+export const HOME_TAGS_MODES = ['top', 'chosen']
+export const HOME_TAGS_MIN = 1
+export const HOME_TAGS_MAX = 12
+
+export function normalizeHomeTagsMode(mode) {
+  return HOME_TAGS_MODES.includes(mode) ? mode : 'top'
+}
+
+export function clampHomeTagsMax(n) {
+  const v = Number.parseInt(n, 10)
+  if (!Number.isFinite(v)) return 5
+  return Math.min(HOME_TAGS_MAX, Math.max(HOME_TAGS_MIN, v))
+}
 
 export function clampUiScale(n) {
   const v = Number.parseInt(n, 10)

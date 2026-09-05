@@ -36,18 +36,30 @@
 
 /* Desktop positions the tag chips absolutely under its toolbar; in the
    mobile column they flow between the top bar and the grid at the same 16px
-   gutter */
+   gutter. Phones wrap the chips instead of scrolling them: the chip budget
+   keeps the row short, and a second line is easier to spot than chips hidden
+   inside a scroller beside the '+N more' chip, so the scroller's box is
+   dissolved and its chips become the bar's own flex items. */
 .mobile-shell .tag-filter-bar {
   position: static;
   margin: 0;
   padding: var(--space-1) var(--space-4);
-  gap: var(--space-1-5); /* the default six chips fit a 412px phone */
-  scroll-padding-inline: var(--space-4); /* a chip scrolled into view rests at the gutter */
+  gap: var(--space-1-5);
+  flex-wrap: wrap;
+}
+
+.mobile-shell .tag-filter-scroll {
+  display: contents;
 }
 
 /* Touch-sized chips (~32px tall) */
 .mobile-shell .tag-filter-chip {
   padding: var(--space-2) var(--space-3);
+}
+
+/* Thumb-sized rows in the "+N more" menu */
+.mobile-shell .tag-filter-menu-item {
+  min-height: 44px;
 }
 
 /* ── Paged grid ─────────────────────────────────────────────── */

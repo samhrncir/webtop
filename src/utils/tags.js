@@ -100,3 +100,34 @@ export function itemMatchesQuery(item, q) {
 export function compareByName(a, b) {
   return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
 }
+
+// Which tags get a chip on the home screen. `tags` is allTags() output
+// (alphabetical, with counts). 'top' shows the `max` most-used tags, ties
+// alphabetical; 'chosen' shows exactly the user's picks (names that no longer
+// exist are ignored). The active tag always gets a chip, so a filter picked
+// from search or the overflow menu is visible and clearable. Returns
+// { shown, overflow }; overflow stays alphabetical for scanning.
+export function pickHomeTags(tags, { mode = 'top', max = 5, chosen = [], activeTag = null } = {}) {
+  const list = Array.isArray(tags) ? tags : []
+  let shown
+  if (mode === 'chosen') {
+    const picks = new Set(Array.isArray(chosen) ? chosen : [])
+    shown = list.filter((t) => picks.has(t.tag))
+  } else {
+    const n = Number(max)
+    const limit = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 5
+    shown = [...list]
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+      .slice(0, limit)
+  }
+  const shownSet = new Set(shown.map((t) => t.tag))
+  if (activeTag && activeTag !== FAVORITES_FILTER && !shownSet.has(activeTag)) {
+    const active = list.find((t) => t.tag === activeTag)
+    if (active) {
+      shown = [...shown, active]
+      shownSet.add(activeTag)
+    }
+  }
+  const overflow = list.filter((t) => !shownSet.has(t.tag))
+  return { shown, overflow }
+}

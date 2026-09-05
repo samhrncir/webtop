@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizeTag, getTags, hasTag, normalizeTagList,
   flattenBookmarks, allTags, itemMatchesQuery, compareByName,
-  itemMatchesFilter, isFavorite, FAVORITES_FILTER,
+  itemMatchesFilter, isFavorite, FAVORITES_FILTER, pickHomeTags,
 } from './tags.js'
 
 describe('normalizeTag', () => {
@@ -114,5 +114,48 @@ describe('compareByName', () => {
   it('sorts case-insensitively and tolerates missing names', () => {
     const sorted = [{ name: 'beta' }, { name: 'Alpha' }, {}].sort(compareByName)
     expect(sorted.map((x) => x.name)).toEqual([undefined, 'Alpha', 'beta'])
+  })
+})
+
+describe('pickHomeTags (which tags get a home screen chip)', () => {
+  const tags = [
+    { tag: 'dev', count: 8 }, { tag: 'media', count: 5 }, { tag: 'news', count: 1 },
+    { tag: 'shopping', count: 1 }, { tag: 'work', count: 6 },
+  ]
+  const names = (list) => list.map((t) => t.tag)
+
+  it("'top' shows the most-used tags (ties alphabetical) and overflows the rest alphabetically", () => {
+    const { shown, overflow } = pickHomeTags(tags, { mode: 'top', max: 3 })
+    expect(names(shown)).toEqual(['dev', 'work', 'media'])
+    expect(names(overflow)).toEqual(['news', 'shopping'])
+  })
+
+  it('shows everything, with nothing to overflow, when the limit covers every tag', () => {
+    const { shown, overflow } = pickHomeTags(tags, { mode: 'top', max: 10 })
+    expect(shown).toHaveLength(5)
+    expect(overflow).toEqual([])
+  })
+
+  it("'chosen' shows exactly the picked tags and ignores names that no longer exist", () => {
+    const { shown, overflow } = pickHomeTags(tags, { mode: 'chosen', chosen: ['work', 'news', 'gone'] })
+    expect(names(shown)).toEqual(['news', 'work'])
+    expect(names(overflow)).toEqual(['dev', 'media', 'shopping'])
+  })
+
+  it('the active tag always gets a chip, even when it would otherwise overflow', () => {
+    const { shown, overflow } = pickHomeTags(tags, { mode: 'top', max: 2, activeTag: 'shopping' })
+    expect(names(shown)).toEqual(['dev', 'work', 'shopping'])
+    expect(names(overflow)).toEqual(['media', 'news'])
+  })
+
+  it('the favorites filter and unknown active tags add no chip', () => {
+    expect(pickHomeTags(tags, { max: 1, activeTag: FAVORITES_FILTER }).shown).toHaveLength(1)
+    expect(pickHomeTags(tags, { max: 1, activeTag: 'nope' }).shown).toHaveLength(1)
+  })
+
+  it('tolerates junk input', () => {
+    expect(pickHomeTags(undefined)).toEqual({ shown: [], overflow: [] })
+    expect(pickHomeTags(tags, { mode: 'chosen', chosen: null }).shown).toEqual([])
+    expect(pickHomeTags(tags, { max: 'x' }).shown).toHaveLength(5)
   })
 })
