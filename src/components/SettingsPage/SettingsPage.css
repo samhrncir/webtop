@@ -134,6 +134,12 @@
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: var(--space-1) var(--space-4);
   padding: var(--space-3) var(--space-4);
+  /* About six rows, then the list scrolls inside the card instead of
+     turning the page into one long checklist */
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .settings-tagpick {
