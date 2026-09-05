@@ -81,9 +81,14 @@ npm run test:watch
 
 **Coverage ratchet:** `npm test` fails if coverage over `src/**` drops below
 the thresholds in `vite.config.js` — an untested new feature fails CI.
-When a local run beats the floors, vitest's `autoUpdate` rewrites them to
-the new values; commit that bump with your PR. The floors only go up —
-never lower them by hand to get a PR through; write the missing specs.
+The floors sit half a point under the measured coverage, because the exact
+number differs by a statement or two between Windows and the Linux runner
+and the sync tests cover slightly different paths under load. When your
+specs raise coverage, raise the floors to the nearest half point below the
+new value and commit that with your PR. The floors only go up — never lower
+them by hand to get a PR through; write the missing specs. Tests always run
+on the inert Supabase stub (`test.env` blanks the credentials), so a local
+`npm test` measures the same thing CI does.
 
 Rules for both agents:
 
