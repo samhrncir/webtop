@@ -16,15 +16,17 @@ export default function Clock() {
   let suffix = ''
 
   if (settings.timeFormat === '12') {
-    suffix = hours >= 12 ? ' PM' : ' AM'
+    suffix = hours >= 12 ? 'PM' : 'AM'
     hours = hours % 12 || 12
   }
 
   return (
     <div className="clock">
       <img src="/globe.svg" className="clock-globe" aria-hidden="true" />
-      {hours}<span className="clock-colon">:</span>{minutes}
-      {suffix && <span className="clock-suffix">{suffix}</span>}
+      <span className="clock-time">
+        {hours}<span className="clock-colon">:</span>{minutes}
+        {suffix && <span className="clock-suffix">{suffix}</span>}
+      </span>
     </div>
   )
 }

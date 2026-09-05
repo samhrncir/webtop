@@ -4,13 +4,14 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  --toolbar-h: 42px; /* 12px top padding + ~30px button; TagFilterBar and the grid offsets derive from it */
 }
 
 .homescreen-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px 0;
+  padding: var(--space-3) var(--space-4) 0;
   position: absolute;
   top: 0;
   left: 0;
@@ -21,7 +22,7 @@
 .homescreen-toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .homescreen-toolbar-btn {
@@ -31,13 +32,13 @@
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
-  padding: 6px 12px;
+  padding: var(--space-1-5) var(--space-3);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   font-family: inherit;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1-5);
 }
 
 .homescreen-toolbar-btn:hover {
@@ -63,19 +64,21 @@
 
 /* As many 72px columns as fit, capped by the Settings > Grid columns value
    (--grid-max-cols): max-width = cols*72 + (cols-1)*16 gap + 48 padding.
-   Width is split so the cap never dips under four columns. */
+   Width is split so the cap never dips under four columns.
+   Plus 16px of slack so a classic (non-overlay) scrollbar never costs a
+   column once the grid scrolls. */
 .homescreen-grid {
   --grid-max-cols: 4;
   display: grid;
   grid-template-columns: repeat(auto-fill, 72px);
   grid-auto-rows: 96px;
-  gap: 16px;
-  padding: 56px 24px calc(24px + var(--tray-clearance, 0px));
+  gap: var(--space-4);
+  padding: calc(var(--toolbar-h) + var(--space-4)) var(--space-6) calc(var(--space-6) + var(--tray-clearance, 0px));
   justify-content: center;
   align-content: start;
   height: 100%;
   width: 100%;
-  max-width: calc(var(--grid-max-cols) * 88px + 32px);
+  max-width: calc(var(--grid-max-cols) * 88px + 32px + 16px);
   margin: 0 auto;
   box-sizing: border-box;
   overflow-y: auto;
@@ -85,9 +88,9 @@
 @media (max-width: 400px) {
   .homescreen-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px 8px;
-    padding-left: 12px;
-    padding-right: 12px;
+    gap: var(--space-4) var(--space-2);
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
   }
 }
 
@@ -118,7 +121,7 @@
 
 /* Extra clearance for the tag chip row under the toolbar */
 .homescreen-grid--with-tags {
-  padding-top: 88px;
+  padding-top: calc(var(--toolbar-h) + 52px); /* + chip row (~36px) + 16px clearance, like the toolbar */
 }
 
 /* DnD overlay style */
@@ -152,8 +155,8 @@
 /* FAB add button */
 .homescreen-fab {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: var(--space-5);
+  right: var(--space-4);
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -229,7 +232,7 @@
   justify-content: center;
   cursor: pointer;
   transition: opacity 0.2s, background 0.15s, transform 0.15s;
-  padding-bottom: 2px;
+  padding-bottom: var(--space-0-5);
 }
 
 .page-nav-zone:hover .page-nav-btn,
@@ -260,7 +263,7 @@
 }
 
 .homescreen-empty-hint p {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   font-size: 13px;
 }
 
@@ -282,12 +285,12 @@
   background: var(--modal-bg);
   border: 1px solid var(--accent-border);
   border-radius: 16px;
-  padding: 24px 20px;
+  padding: var(--space-6);
   width: 300px;
   max-width: calc(92vw / var(--ui-zoom, 1));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--space-5);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -302,7 +305,7 @@
 
 .confirm-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .confirm-cancel {
@@ -313,7 +316,7 @@
   color: var(--text-muted);
   font-size: 14px;
   font-weight: 600;
-  padding: 10px;
+  padding: var(--space-3);
   cursor: pointer;
   transition: background 0.15s;
   font-family: inherit;
@@ -326,12 +329,12 @@
 .confirm-delete {
   flex: 1;
   background: #e53e3e;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 10px;
   color: #fff;
   font-size: 14px;
   font-weight: 700;
-  padding: 10px;
+  padding: var(--space-3);
   cursor: pointer;
   transition: background 0.15s;
   font-family: inherit;

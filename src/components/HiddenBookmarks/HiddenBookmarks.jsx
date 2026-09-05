@@ -47,7 +47,7 @@ export default function HiddenBookmarks({ hiddenBookmarks, visibleBookmarks, set
         <div className="settings-card">
           <div className="hidden-bm-picker">
             <select
-              className="hidden-bm-select"
+              className="settings-select hidden-bm-select"
               value={pickId}
               onChange={(e) => setPickId(e.target.value)}
               aria-label="Bookmark to hide"

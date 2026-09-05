@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   cursor: pointer;
   position: relative;
   width: 72px;
@@ -58,7 +58,7 @@
 }
 
 .app-icon-letter {
-  width: 56px
+  width: 56px;
   height: 56px;
   border-radius: 14px;
   display: flex;
@@ -142,7 +142,7 @@
   border-radius: 4px;
   text-align: center;
   width: 72px;
-  padding: 2px 4px;
+  padding: var(--space-0-5) var(--space-1);
   outline: none;
   font-family: inherit;
 }

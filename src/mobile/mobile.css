@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px 4px;
+  padding: var(--space-2) var(--space-4);
   flex-shrink: 0;
 }
 
@@ -22,7 +22,7 @@
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
-  padding: 10px 14px;
+  padding: var(--space-2) var(--space-3);
   min-height: 44px;
   cursor: pointer;
   font-family: inherit;
@@ -34,21 +34,18 @@
   color: var(--text-primary);
 }
 
-/* The desktop toolbar positions the clock absolutely; in this flex row it
-   should just flow */
-.mobile-topbar .clock {
-  position: static;
-}
-
 /* Desktop positions the tag chips absolutely under its toolbar; in the
-   mobile column they flow between the top bar and the grid */
+   mobile column they flow between the top bar and the grid at the same 16px
+   gutter */
 .mobile-shell .tag-filter-bar {
   position: static;
-  transform: none;
-  margin: 0 12px 4px;
-  max-width: none;
-  overflow-x: auto;
-  scrollbar-width: none;
+  margin: 0;
+  padding: var(--space-1) var(--space-4);
+}
+
+/* Touch-sized chips (~32px tall) */
+.mobile-shell .tag-filter-chip {
+  padding: var(--space-2) var(--space-3);
 }
 
 /* ── Paged grid ─────────────────────────────────────────────── */
@@ -62,7 +59,8 @@
 }
 
 .mobile-stage.has-tray {
-  --tray-clearance: 96px;
+  --tray-clearance: var(--tray-height);
+  --tray-lift: 66px; /* the pill's top edge: 54px pill + 12px wrapper padding */
 }
 
 .mobile-pages {
@@ -92,7 +90,7 @@
   scroll-snap-stop: always;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding: 12px 12px calc(16px + var(--tray-clearance));
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--tray-clearance));
   box-sizing: border-box;
 }
 
@@ -100,7 +98,7 @@
 .mobile-grid-filtered {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px 8px;
+  gap: var(--space-4) var(--space-2);
   justify-items: center;
   align-content: start;
 }
@@ -111,7 +109,7 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding: 12px 12px calc(16px + var(--tray-clearance));
+  padding: var(--space-3) var(--space-4) calc(var(--space-4) + var(--tray-clearance));
 }
 
 /* Short landscape phones: widen the grid, tighten the vertical budget */
@@ -131,8 +129,8 @@
   position: relative; /* anchors the upward search overlay to the whole bar */
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px 10px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   flex-shrink: 0;
   background: var(--bottom-bar-bg);
   backdrop-filter: blur(12px);
@@ -141,8 +139,8 @@
 }
 
 .mobile-bottombar-btn {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -172,23 +170,31 @@
   -webkit-backdrop-filter: none;
 }
 
+/* Level with the 44px buttons beside it */
+.mobile-bottombar-search .search-bar-input-row {
+  min-height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .mobile-bottombar-search .search-results-overlay {
   position: absolute;
   top: auto;
-  left: 8px;
-  right: 8px;
-  bottom: calc(100% + 8px);
+  left: var(--space-2);
+  right: var(--space-2);
+  bottom: calc(100% + var(--space-2));
   border: 1px solid var(--border);
   border-radius: 14px;
   max-height: min(calc(55vh / var(--ui-zoom, 1)), 420px);
   max-height: min(calc(55dvh / var(--ui-zoom, 1)), 420px);
 }
 
-/* ── Floating add button (edit mode) ────────────────────────── */
+/* ── Floating add button (edit mode) — anchored to the stage so it floats
+   over the grid, above the tray when there is one ──────────────── */
 .mobile-fab {
-  position: fixed;
-  right: 18px;
-  bottom: calc(84px + var(--safe-bottom, 0px) / var(--ui-zoom, 1));
+  position: absolute;
+  right: var(--space-4);
+  bottom: calc(var(--space-4) + var(--tray-lift, 0px));
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -217,8 +223,8 @@
   border-bottom: none;
   max-height: calc(88vh / var(--ui-zoom, 1));
   max-height: calc(88dvh / var(--ui-zoom, 1));
-  padding-top: 18px;
-  padding-bottom: calc(20px + var(--safe-bottom, 0px) / var(--ui-zoom, 1));
+  padding-top: var(--space-6);
+  padding-bottom: calc(var(--space-6) + var(--safe-bottom, 0px) / var(--ui-zoom, 1));
   animation: mobile-sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
@@ -235,6 +241,22 @@
   background: var(--dot-inactive);
 }
 
+/* Thumb-sized controls inside the sheet */
+.mobile-sheet-host .app-info-close {
+  width: 40px;
+  height: 40px;
+}
+.mobile-sheet-host .app-info-edit-btn {
+  padding: var(--space-2) var(--space-3);
+}
+.mobile-sheet-host .app-info-suburl-add-btn {
+  width: 32px;
+  height: 32px;
+}
+.mobile-sheet-host .app-info-pin-btn {
+  min-height: 44px;
+}
+
 @keyframes mobile-sheet-up {
   from { transform: translateY(40%); opacity: 0.6; }
   to   { transform: translateY(0);   opacity: 1; }
@@ -242,8 +264,7 @@
 
 /* Slightly larger page dots for touch */
 .mobile-shell .page-dot {
-  width: 10px;
-  height: 10px;
+  --dot: 10px;
 }
 
 /* ── Settings as a full-screen page ─────────────────────────── */

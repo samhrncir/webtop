@@ -1,3 +1,27 @@
+/* ── Spacing scale ───────────────────────────────────────────── */
+/* 4px rhythm. Every padding, margin and gap in the app is one of these
+   steps; sizes (widths, heights, radii) and 1–2px optical nudges are not. */
+:root {
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+}
+
+/* ── Layout constants shared by both shells ──────────────────── */
+:root {
+  /* Floating taskbar geometry (Taskbar.css): 54px pill (40px icon + 2×6px
+     padding + 2×1px border) + 24px fade above + 12px below, plus slack.
+     --tray-clearance in each shell's stage points at --tray-height. */
+  --tray-height: 96px;
+}
+
 /* ── Theme tokens ────────────────────────────────────────────── */
 [data-theme="dark"] {
   --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);

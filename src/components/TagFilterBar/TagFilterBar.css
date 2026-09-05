@@ -2,14 +2,14 @@
    gets extra top padding via .homescreen-grid--with-tags to clear it */
 .tag-filter-bar {
   position: absolute;
-  top: 44px;
+  top: calc(var(--toolbar-h) + var(--space-1));
   left: 0;
   right: 0;
   z-index: 29;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 16px 8px;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4) var(--space-2);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -22,7 +22,7 @@
 .tag-filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1);
   flex-shrink: 0;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -30,7 +30,7 @@
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 11px;
+  padding: var(--space-1) var(--space-3);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   font-family: inherit;

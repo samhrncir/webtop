@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   cursor: pointer;
   position: relative;
   width: 72px;
@@ -24,9 +24,9 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
+  /* 3px gap + 5px padding inside the 1.5px border give integer 20px cells, so favicons stay crisp */
   gap: 3px;
   padding: 5px;
-  overflow: hidden;
   transition: transform 0.15s;
 }
 
@@ -122,7 +122,7 @@
   border-radius: 4px;
   text-align: center;
   width: 72px;
-  padding: 2px 4px;
+  padding: var(--space-0-5) var(--space-1);
   outline: none;
   font-family: inherit;
 }

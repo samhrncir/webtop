@@ -9,12 +9,22 @@
 .bin-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
 }
 
+/* Inset separator, like .settings-divider on the main page */
 .bin-row + .bin-row {
-  border-top: 1px solid var(--border);
+  position: relative;
+}
+.bin-row + .bin-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 1px;
+  background: var(--border);
 }
 
 .bin-icon {
@@ -32,7 +42,7 @@
 .bin-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5);
   min-width: 0;
   flex: 1;
 }
@@ -62,24 +72,15 @@
 
 .bin-empty {
   margin: 0;
-  padding: 16px;
+  padding: var(--space-4);
   text-align: center;
   font-size: 12px;
   color: var(--text-muted);
 }
 
 .bin-hint {
-  margin: -12px 0 0;
+  margin: var(--space-2) var(--space-1) 0;
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.5;
-}
-
-@media (max-width: 480px) {
-  .bin-row {
-    flex-wrap: wrap;
-  }
-  .bin-restore {
-    margin-left: auto;
-  }
 }

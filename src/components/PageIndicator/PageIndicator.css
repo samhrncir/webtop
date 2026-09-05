@@ -2,8 +2,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  min-height: calc(28px + 2 * var(--space-3) + 1px); /* tall enough for the edit-mode −/+ buttons, so toggling Edit never reflows the grid above */
   background: var(--bottom-bar-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -12,21 +13,29 @@
 }
 
 .page-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  --dot: 8px;
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 999px;
   background: var(--dot-inactive);
   cursor: pointer;
   transition: background 0.2s, transform 0.2s, width 0.2s;
   border: none;
   padding: 0;
   flex-shrink: 0;
+  position: relative;
+}
+
+/* Hit area larger than the 8px dot, without touching the layout */
+.page-dot::before {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
 }
 
 .page-dot.active {
   background: var(--accent);
-  width: 22px;
-  border-radius: 4px;
+  width: calc(var(--dot) * 3);
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
@@ -49,7 +58,7 @@
   justify-content: center;
   cursor: pointer;
   transition: background 0.15s, transform 0.15s, color 0.15s;
-  margin-left: 4px;
+  margin-left: var(--space-1);
 }
 
 .page-add-btn:hover {
@@ -72,7 +81,7 @@
   justify-content: center;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
-  margin-left: 4px;
+  margin-left: var(--space-1);
 }
 
 .page-delete-btn:hover {

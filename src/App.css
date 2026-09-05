@@ -58,6 +58,6 @@
 }
 
 .app-home-stage.has-tray {
-  /* pill (52px) + wrapper padding, so the last row can scroll clear of it */
-  --tray-clearance: 96px;
+  /* the last grid row can scroll clear of the floating tray */
+  --tray-clearance: var(--tray-height);
 }

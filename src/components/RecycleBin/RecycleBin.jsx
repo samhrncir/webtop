@@ -80,14 +80,13 @@ export default function RecycleBin({ trash, restorePage, restoreFolder }) {
             </ul>
           )}
         </div>
+        {!empty && (
+          <p className="bin-hint">
+            Restoring brings back everything that was deleted along with the page or folder.
+            Deleted items are kept indefinitely.
+          </p>
+        )}
       </section>
-
-      {!empty && (
-        <p className="bin-hint">
-          Restoring brings back everything that was deleted along with the page or folder.
-          Deleted items are kept indefinitely.
-        </p>
-      )}
     </>
   )
 }

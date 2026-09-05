@@ -140,6 +140,11 @@ export default function MobileShell() {
               onUnpin={togglePin}
               onReorder={reorderPinned}
             />
+            {editMode && (
+              <button className="mobile-fab" onClick={() => setShowAdd(true)} aria-label="Add bookmark or folder">
+                +
+              </button>
+            )}
           </div>
 
           {!activeTag && (
@@ -162,12 +167,6 @@ export default function MobileShell() {
             onOpenSettings={() => setView('settings')}
             aiChat={aiChat}
           />
-
-          {editMode && (
-            <button className="mobile-fab" onClick={() => setShowAdd(true)} aria-label="Add bookmark or folder">
-              +
-            </button>
-          )}
 
           {liveFolder && (
             <FolderOverlay
