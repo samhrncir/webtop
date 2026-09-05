@@ -4,9 +4,10 @@ import {
   useSettings,
   GRID_MIN_COLUMNS, GRID_MAX_COLUMNS, clampGridColumns,
   UI_SCALE_MIN, UI_SCALE_MAX, UI_SCALE_STEP, clampUiScale,
+  HOME_TAGS_MIN, HOME_TAGS_MAX, clampHomeTagsMax, normalizeHomeTagsMode,
 } from '../../context/SettingsContext.jsx'
 import { supabase } from '../../lib/supabase.js'
-import { flattenBookmarks } from '../../utils/tags.js'
+import { flattenBookmarks, allTags } from '../../utils/tags.js'
 import { normalizeChatUrl, resolveAiChat } from '../../utils/aiChat.js'
 import HiddenBookmarks from '../HiddenBookmarks/HiddenBookmarks.jsx'
 import RecycleBin from '../RecycleBin/RecycleBin.jsx'
@@ -168,6 +169,25 @@ export default function SettingsPage({
     if (normalized) setUrlDraft(normalized)
   }, [urlDraft, setSetting])
 
+  // ---- Home screen tag chips ----
+  // Stored values are normalized on read so a hand-edited or stale settings
+  // blob can't leave the controls in a state the chip bar wouldn't honour
+  const tags = useMemo(() => (data ? allTags(data) : []), [data])
+  const homeTagsMode = normalizeHomeTagsMode(settings.homeTagsMode)
+  const homeTagsMax = clampHomeTagsMax(settings.homeTagsMax)
+  const homeTagsChosen = Array.isArray(settings.homeTagsChosen) ? settings.homeTagsChosen : []
+  // Picks whose tag has since been removed from every bookmark don't count
+  const chosenCount = tags.filter((t) => homeTagsChosen.includes(t.tag)).length
+
+  const toggleChosen = useCallback((tag) => {
+    setSetting(
+      'homeTagsChosen',
+      homeTagsChosen.includes(tag)
+        ? homeTagsChosen.filter((t) => t !== tag)
+        : [...homeTagsChosen, tag],
+    )
+  }, [homeTagsChosen, setSetting])
+
   const handleImportClick = useCallback(() => {
     fileInputRef.current?.click()
   }, [])
@@ -294,6 +314,65 @@ export default function SettingsPage({
                   onChange={(val) => setSetting('timeFormat', val)}
                 />
               </SettingsRow>
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <h2 className="settings-section-title">Tags</h2>
+            <div className="settings-card">
+              <SettingsRow
+                label="Home screen chips"
+                description={
+                  homeTagsMode === 'top'
+                    ? `The ${homeTagsMax} most-used tags get a chip; the rest sit behind “+N more”`
+                    : `${chosenCount} of ${tags.length} tags get a chip; the rest sit behind “+N more”`
+                }
+              >
+                <SegmentedControl
+                  options={[
+                    { label: 'Most used', value: 'top' },
+                    { label: 'Chosen', value: 'chosen' },
+                  ]}
+                  value={homeTagsMode}
+                  onChange={(v) => setSetting('homeTagsMode', v)}
+                />
+              </SettingsRow>
+
+              <div className="settings-divider" />
+
+              {homeTagsMode === 'top' ? (
+                <SettingsRow label="Show up to" description="Most-used tags shown as chips">
+                  <StepperSlider
+                    min={HOME_TAGS_MIN}
+                    max={HOME_TAGS_MAX}
+                    step={1}
+                    value={homeTagsMax}
+                    onChange={(v) => setSetting('homeTagsMax', clampHomeTagsMax(v))}
+                    ariaLabel="Maximum home screen tags"
+                  />
+                </SettingsRow>
+              ) : (
+                // Not a SettingsRow: the checklist spans the card so many tags
+                // can flow into columns instead of stacking beside a label
+                <div className="settings-taglist" role="group" aria-label="Tags shown on the home screen">
+                  {tags.length === 0 && (
+                    <p className="settings-taglist-empty">
+                      No tags yet — add tags to a bookmark from its App Info panel.
+                    </p>
+                  )}
+                  {tags.map(({ tag, count }) => (
+                    <label key={tag} className="settings-tagpick">
+                      <input
+                        type="checkbox"
+                        checked={homeTagsChosen.includes(tag)}
+                        onChange={() => toggleChosen(tag)}
+                      />
+                      <span className="settings-tagpick-name">{tag}</span>
+                      <span className="settings-tagpick-count">{count}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 

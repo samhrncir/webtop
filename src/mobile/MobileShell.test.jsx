@@ -45,6 +45,22 @@ const twoPages = () => ({
   ],
 })
 
+// Seven tags whose counts make the default "five most-used" pick
+// unambiguous: dev, work, music, news and games get chips; art and shop
+// (one bookmark each) fold behind "+2 more"
+const sevenTags = () => ({
+  pages: [page('p1', 'a'), page('p2', 'b')],
+  items: [
+    bm('hub', 'p1', 'a', { tags: ['dev', 'work', 'music', 'news', 'games'] }),
+    bm('desk', 'p1', 'b', { tags: ['dev', 'work', 'music', 'news', 'games'] }),
+    bm('tunes', 'p1', 'c', { tags: ['dev', 'work', 'music'] }),
+    bm('inbox', 'p1', 'd', { tags: ['dev', 'work'] }),
+    bm('repo', 'p2', 'a', { tags: ['dev'] }),
+    bm('gallery', 'p2', 'b', { tags: ['art'] }),
+    bm('shopper', 'p2', 'c', { tags: ['shop'] }),
+  ],
+})
+
 beforeEach(() => {
   vi.spyOn(window, 'open').mockImplementation(() => null)
 })
@@ -172,6 +188,32 @@ describe('filters and navigation', () => {
     expect(screen.getByText('alpha')).toBeInTheDocument()
     expect(screen.queryByText('beta')).not.toBeInTheDocument()
     expect(screen.queryByTestId('mobile-pages')).not.toBeInTheDocument()
+  })
+
+  it('with many tags only the most-used get chips; a folded tag is still reachable from "+N more"', async () => {
+    mount(sevenTags())
+    const bar = screen.getByRole('group', { name: 'Filter by tag' })
+    const chip = (tag) => within(bar).queryByRole('button', { name: new RegExp(`^${tag}\\s*\\d*$`) })
+    for (const tag of ['dev', 'work', 'music', 'news', 'games']) {
+      expect(chip(tag)).toHaveAttribute('aria-pressed', 'false')
+    }
+    expect(chip('art')).not.toBeInTheDocument()
+    expect(chip('shop')).not.toBeInTheDocument()
+
+    await userEvent.click(within(bar).getByRole('button', { name: '+2 more' }))
+    await userEvent.click(screen.getByRole('menuitemradio', { name: /^shop/ }))
+
+    // The grid flattens to the one bookmark carrying the folded tag...
+    const grid = screen.getByTestId('mobile-filtered-grid')
+    expect(within(grid).getByText('shopper')).toBeInTheDocument()
+    expect(within(grid).queryByText('gallery')).not.toBeInTheDocument()
+    expect(within(grid).queryByText('hub')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('mobile-pages')).not.toBeInTheDocument()
+    // ...and the picked tag is promoted to a chip so the filter stays
+    // visible and clearable, leaving one tag folded
+    expect(chip('shop')).toHaveAttribute('aria-pressed', 'true')
+    expect(within(bar).getByRole('button', { name: '+1 more' })).toBeInTheDocument()
+    expect(screen.queryByRole('menu', { name: 'More tags' })).not.toBeInTheDocument()
   })
 
   it('page dots drive the pager', async () => {

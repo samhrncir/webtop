@@ -1,5 +1,7 @@
 /* Sits under the (absolutely positioned) homescreen toolbar; the grid
-   gets extra top padding via .homescreen-grid--with-tags to clear it */
+   gets extra top padding via .homescreen-grid--with-tags to clear it.
+   The bar itself no longer scrolls — .tag-filter-scroll does — so the
+   "+N more" menu can hang below the row without being clipped. */
 .tag-filter-bar {
   position: absolute;
   top: calc(var(--toolbar-h) + var(--space-1));
@@ -10,12 +12,22 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-4) var(--space-2);
+}
+
+/* Sizes to its chips and shrinks (then scrolls) only when they don't fit,
+   so the More chip sits right after the last chip */
+.tag-filter-scroll {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 1 auto;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
 }
 
-.tag-filter-bar::-webkit-scrollbar {
+.tag-filter-scroll::-webkit-scrollbar {
   display: none;
 }
 
@@ -62,4 +74,106 @@
 .tag-filter-chip.active .tag-filter-count {
   color: inherit;
   opacity: 0.75;
+}
+
+/* ── "+N more" chip and its dropdown ─────────────────────────── */
+.tag-filter-more {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* The shared .active styling lights the chip while its menu is open */
+.tag-filter-chip--more {
+  color: var(--text-muted);
+}
+
+.tag-filter-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 60;
+  min-width: 220px;
+  max-width: 280px;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: var(--space-1-5);
+  background: var(--results-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Near the viewport's right edge the menu hangs left of the chip instead */
+.tag-filter-menu--right {
+  left: auto;
+  right: 0;
+}
+
+.tag-filter-menu-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: var(--space-1);
+  padding: var(--space-1-5) var(--space-3);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.tag-filter-menu-search:focus {
+  border-color: var(--accent-border);
+}
+
+.tag-filter-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.tag-filter-menu-item:hover,
+.tag-filter-menu-item:focus-visible {
+  background: var(--surface-hover);
+}
+
+.tag-filter-menu-item.active {
+  background: var(--accent-light);
+  color: #a78bfa;
+}
+
+.tag-filter-menu-item.active .tag-filter-count {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.tag-filter-menu-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-filter-menu-empty {
+  padding: var(--space-2) var(--space-3);
+  font-size: 12px;
+  color: var(--text-muted);
 }

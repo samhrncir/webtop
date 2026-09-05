@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SettingsPage from './SettingsPage.jsx'
 import { ThemeProvider } from '../../context/ThemeContext.jsx'
@@ -13,6 +13,18 @@ const data = {
       id: 'bm1', type: 'bookmark', name: 'Claude', url: 'https://claude.ai',
       subUrls: [{ id: 's1', name: 'New chat', url: '/new', isDefault: true }],
     }],
+  }],
+}
+
+// Four tags across three bookmarks; "work" is the only one used twice
+const taggedData = {
+  pages: [{
+    id: 'p1',
+    items: [
+      { id: 'bm1', type: 'bookmark', name: 'Claude', url: 'https://claude.ai', tags: ['ai', 'work'] },
+      { id: 'bm2', type: 'bookmark', name: 'GitHub', url: 'https://github.com', tags: ['work', 'dev'] },
+      { id: 'bm3', type: 'bookmark', name: 'YouTube', url: 'https://youtube.com', tags: ['fun'] },
+    ],
   }],
 }
 
@@ -30,7 +42,7 @@ function mount(props = {}) {
     <ThemeProvider>
       <SettingsProvider>
         <SettingsPage
-          data={data}
+          data={props.data ?? data}
           hiddenBookmarks={props.hiddenBookmarks ?? []}
           visibleBookmarks={[]}
           trash={props.trash ?? { pages: [], folders: [] }}
@@ -99,6 +111,126 @@ describe('appearance', () => {
     fireEvent.change(slider, { target: { value: '8' } })
     expect(storedSettings().gridMaxColumns).toBe(8)
     expect(screen.getByText(/Up to 8 columns/)).toBeInTheDocument()
+  })
+})
+
+describe('home screen tags', () => {
+  const seedSettings = (partial) =>
+    localStorage.setItem('browserhome_settings', JSON.stringify(partial))
+
+  it('the Tags section sits right after Appearance', () => {
+    mount({ data: taggedData })
+    const titles = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+    expect(titles.indexOf('Tags')).toBe(titles.indexOf('Appearance') + 1)
+    expect(screen.getByText('Home screen chips')).toBeInTheDocument()
+  })
+
+  it('switching to Chosen persists the mode and swaps the count slider for a checklist', async () => {
+    mount({ data: taggedData })
+    expect(screen.getByText('Show up to')).toBeInTheDocument()
+    expect(screen.getByText('Most-used tags shown as chips')).toBeInTheDocument()
+    expect(screen.getByLabelText('Maximum home screen tags')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Tags shown on the home screen' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Chosen' }))
+    expect(storedSettings().homeTagsMode).toBe('chosen')
+    expect(screen.queryByText('Show up to')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Maximum home screen tags')).not.toBeInTheDocument()
+    const list = screen.getByRole('group', { name: 'Tags shown on the home screen' })
+    expect(within(list).getAllByRole('checkbox')).toHaveLength(4)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Most used' }))
+    expect(storedSettings().homeTagsMode).toBe('top')
+    expect(screen.getByLabelText('Maximum home screen tags')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Tags shown on the home screen' })).not.toBeInTheDocument()
+  })
+
+  it('the checklist lists every tag alphabetically with how many bookmarks carry it', () => {
+    seedSettings({ homeTagsMode: 'chosen' })
+    mount({ data: taggedData })
+    const names = screen.getAllByRole('checkbox').map((box) => box.closest('label').textContent)
+    expect(names).toEqual(['ai1', 'dev1', 'fun1', 'work2'])
+    const work = screen.getByText('work').closest('label')
+    expect(within(work).getByText('2')).toBeInTheDocument()
+  })
+
+  it('the count slider is clamped to 1–12 and persists', async () => {
+    mount({ data: taggedData })
+    const slider = screen.getByLabelText('Maximum home screen tags')
+    expect(slider).toHaveAttribute('min', '1')
+    expect(slider).toHaveAttribute('max', '12')
+    expect(screen.getByText(/The 5 most-used tags get a chip/)).toBeInTheDocument()
+
+    fireEvent.change(slider, { target: { value: '8' } })
+    expect(storedSettings().homeTagsMax).toBe(8)
+    expect(screen.getByText(/The 8 most-used tags get a chip/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Increase maximum home screen tags' }))
+    expect(storedSettings().homeTagsMax).toBe(9)
+
+    fireEvent.change(slider, { target: { value: '12' } })
+    expect(screen.getByRole('button', { name: 'Increase maximum home screen tags' })).toBeDisabled()
+    fireEvent.change(slider, { target: { value: '1' } })
+    expect(storedSettings().homeTagsMax).toBe(1)
+    expect(screen.getByRole('button', { name: 'Decrease maximum home screen tags' })).toBeDisabled()
+  })
+
+  it('ticking a tag in Chosen mode stores it; unticking removes it', async () => {
+    seedSettings({ homeTagsMode: 'chosen' })
+    mount({ data: taggedData })
+    expect(screen.getByRole('checkbox', { name: /work/ })).not.toBeChecked()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /work/ }))
+    expect(storedSettings().homeTagsChosen).toEqual(['work'])
+    expect(screen.getByRole('checkbox', { name: /work/ })).toBeChecked()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /^ai/ }))
+    expect(storedSettings().homeTagsChosen).toEqual(['work', 'ai'])
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /work/ }))
+    expect(storedSettings().homeTagsChosen).toEqual(['ai'])
+    expect(screen.getByRole('checkbox', { name: /work/ })).not.toBeChecked()
+  })
+
+  it("the row's description reports how many tags get a chip", async () => {
+    // "gone" is a pick whose tag no longer exists on any bookmark
+    seedSettings({ homeTagsMode: 'chosen', homeTagsChosen: ['work', 'fun', 'gone'] })
+    mount({ data: taggedData })
+    expect(screen.getByText(/2 of 4 tags get a chip/)).toBeInTheDocument()
+    // Stored picks come back ticked
+    expect(screen.getByRole('checkbox', { name: /work/ })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /fun/ })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /dev/ })).not.toBeChecked()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /dev/ }))
+    expect(screen.getByText(/3 of 4 tags get a chip/)).toBeInTheDocument()
+    // The vanished pick is kept, so it comes back if the tag is re-added
+    expect(storedSettings().homeTagsChosen).toEqual(['work', 'fun', 'gone', 'dev'])
+  })
+
+  it('with no tags the checklist explains where tags come from', () => {
+    seedSettings({ homeTagsMode: 'chosen' })
+    mount()
+    expect(screen.getByText(/No tags yet — add tags to a bookmark from its App Info panel/)).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.getByText(/0 of 0 tags get a chip/)).toBeInTheDocument()
+  })
+
+  it('an unknown stored mode falls back to Most used', () => {
+    seedSettings({ homeTagsMode: 'bogus', homeTagsMax: 'lots' })
+    mount({ data: taggedData })
+    expect(screen.getByLabelText('Maximum home screen tags')).toHaveValue('5')
+    expect(screen.getByText(/The 5 most-used tags get a chip/)).toBeInTheDocument()
+  })
+
+  it('a corrupt stored pick list is treated as empty', async () => {
+    seedSettings({ homeTagsMode: 'chosen', homeTagsChosen: 'work' })
+    mount({ data: taggedData })
+    expect(screen.getByText(/0 of 4 tags get a chip/)).toBeInTheDocument()
+    screen.getAllByRole('checkbox').forEach((box) => expect(box).not.toBeChecked())
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /dev/ }))
+    expect(storedSettings().homeTagsChosen).toEqual(['dev'])
   })
 })
 
