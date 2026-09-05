@@ -256,6 +256,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
+  min-height: 32px; /* one control height across a row (buttons, selects, inputs) */
   color: var(--text-secondary);
   padding: var(--space-1-5) var(--space-3);
   font-size: 13px;
@@ -275,6 +276,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
+  min-height: 32px;
   color: var(--text-primary);
   padding: var(--space-1-5) var(--space-3);
   font-size: 13px;
@@ -322,6 +324,7 @@
   background: transparent;
   border: 1px solid rgba(248, 113, 113, 0.4);
   border-radius: 8px;
+  min-height: 32px;
   color: #f87171;
   padding: var(--space-1-5) var(--space-3);
   font-size: 13px;

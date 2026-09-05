@@ -8,7 +8,8 @@
   padding: var(--space-3) var(--space-4) var(--space-1-5);
 }
 
-.hidden-bm-select {
+/* Outranks .settings-select's 260px cap, which loads later at equal specificity */
+.hidden-bm-picker .hidden-bm-select {
   flex: 1;
   max-width: none;
 }
