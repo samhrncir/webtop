@@ -237,7 +237,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
         </div>
 
         <div className="app-info-body">
-          <div className="app-info-identity">
+          <div className={`app-info-identity${editMode ? ' is-editing' : ''}`}>
             <div className="app-info-favicon-wrap">
               {previewEmoji ? (
                 <div className="app-info-favicon-emoji" role="img" aria-label={item.name}>

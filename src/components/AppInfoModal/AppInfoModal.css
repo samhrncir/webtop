@@ -15,13 +15,13 @@
   background: var(--modal-bg);
   border: 1px solid var(--accent-border);
   border-radius: 20px;
-  padding: 28px 24px;
+  padding: var(--space-6);
   width: 380px;
-  max-width: calc(95vw / var(--ui-zoom, 1));
+  max-width: calc((100vw - 2 * var(--space-4)) / var(--ui-zoom, 1));
   max-height: calc(85vh / var(--ui-zoom, 1));
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   animation: scaleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
@@ -37,7 +37,7 @@
 .app-info-header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .app-info-edit-btn {
@@ -45,9 +45,10 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 18px;
   font-weight: 600;
-  padding: 4px 12px;
+  padding: var(--space-1-5) var(--space-3);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   font-family: inherit;
@@ -68,10 +69,11 @@
   background: var(--surface);
   border: none;
   color: var(--text-primary);
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -88,22 +90,28 @@
 .app-info-body {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
   /* keep the scrollbar off the content edge */
-  margin: 0 -8px;
-  padding: 0 8px;
+  margin: 0 calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
 }
 
 /* Identity row */
 .app-info-identity {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   flex-shrink: 0;
+}
+
+/* In edit mode the field stack is tall; pin the icon to the top of it */
+.app-info-identity.is-editing {
+  align-items: flex-start;
 }
 
 .app-info-favicon-wrap {
@@ -147,9 +155,15 @@
 .app-info-fields {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   flex: 1;
   min-width: 0;
+}
+
+/* Hints sit closer to the control they explain than to the next one */
+.app-info-fields > .app-info-icon-hint-row,
+.app-info-fields > .app-info-url-hint {
+  margin-top: calc(-1 * var(--space-1));
 }
 
 .app-info-display-name {
@@ -178,8 +192,8 @@
 
 .app-info-account-status {
   align-self: flex-start;
-  margin-top: 4px;
-  padding: 1px 8px;
+  margin-top: var(--space-1);
+  padding: var(--space-0-5) var(--space-2);
   border-radius: 999px;
   background: var(--accent-light);
   border: 1px solid var(--accent-border);
@@ -200,17 +214,24 @@
 .app-info-account-closed-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 12px;
   color: var(--text-muted);
   cursor: pointer;
+}
+
+.app-info-account-closed-row input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
 }
 
 .app-info-input {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
@@ -234,12 +255,11 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .app-info-icon-refresh {
   flex-shrink: 0;
-  white-space: nowrap;
 }
 
 .app-info-icon-refresh:disabled {
@@ -251,7 +271,9 @@
 .app-info-iconbg-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  row-gap: var(--space-1-5);
 }
 
 .app-info-iconbg-row input[type='range'] {
@@ -271,12 +293,14 @@
 .app-info-emoji-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  row-gap: var(--space-1-5);
 }
 
 .app-info-emoji-input {
   width: 44px;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
   text-align: center;
   font-size: 20px;
   line-height: 1.2;
@@ -286,17 +310,19 @@
 .app-info-emoji-label {
   font-size: 12px;
   color: var(--text-muted);
-  flex: 1;
+  flex: 0 0 auto; /* the range / buttons take the slack, not the label */
+  white-space: nowrap;
 }
 
 .app-info-emoji-clear {
   background: none;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
   font-family: inherit;
   color: var(--text-secondary);
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -368,14 +394,14 @@
 .app-info-alias-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
 .app-info-alias-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
   max-height: 96px;
   overflow-y: auto;
 }
@@ -383,11 +409,11 @@
 .app-info-alias-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-3);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
@@ -404,7 +430,8 @@
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
-  padding: 0;
+  padding: 0 var(--space-1);
+  margin-right: calc(-1 * var(--space-2)); /* the × ends 4px from the chip edge, like the tag pill */
   transition: color 0.15s;
   flex-shrink: 0;
 }
@@ -416,7 +443,7 @@
 .app-info-alias-add-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .app-info-alias-add-row .app-info-suburl-add-btn {
@@ -425,13 +452,14 @@
 
 /* Sub pages section */
 .app-info-quick-actions {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr; /* a wrapped label makes every tile the same height */
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
 .app-info-quick-actions .app-info-pin-btn {
-  flex: 1;
   width: auto;
   min-width: 0;
 }
@@ -439,10 +467,10 @@
 .app-info-pin-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: var(--space-2);
   width: 100%;
-  padding: 10px;
+  padding: var(--space-2) var(--space-3);
   flex-shrink: 0;
   border: 1.5px solid var(--border);
   border-radius: 10px;
@@ -450,6 +478,7 @@
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
+  text-align: left;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -468,24 +497,24 @@
 .app-info-pin-icon {
   font-size: 14px;
   line-height: 1;
+  flex-shrink: 0;
+  /* fixed slot so labels in a column share one left edge whatever the glyph width */
+  width: 20px;
+  display: inline-flex;
+  justify-content: center;
 }
 
 .app-info-tag-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
   flex-shrink: 0;
-}
-
-.app-info-tag-section .app-info-suburl-empty {
-  text-align: left;
-  padding: 0;
 }
 
 .app-info-suburl-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
@@ -504,38 +533,9 @@
   letter-spacing: 0.05em;
 }
 
-.app-info-suburl-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.app-info-list-edit-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  font-family: inherit;
-}
-
-.app-info-list-edit-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.app-info-list-edit-btn:hover:not(.active) {
-  background: var(--surface-hover);
-}
-
 .app-info-suburl-add-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--accent-light);
   border: 1.5px solid var(--accent-border);
@@ -557,17 +557,17 @@
 .app-info-suburl-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .app-info-suburl-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   transition: background 0.15s;
 }
 
@@ -585,8 +585,8 @@
 }
 
 .app-info-suburl-default-tag {
-  margin-left: 6px;
-  padding: 1px 6px;
+  margin-left: var(--space-1-5);
+  padding: var(--space-0-5) var(--space-1-5);
   border-radius: 999px;
   background: var(--accent-light);
   border: 1px solid var(--accent-border);
@@ -609,13 +609,13 @@
 .app-info-suburl-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5);
   flex: 1;
   min-width: 0;
   text-decoration: none;
   border-radius: 6px;
-  padding: 2px 4px;
-  margin: -2px -4px;
+  padding: var(--space-0-5) var(--space-1);
+  margin: calc(-1 * var(--space-0-5)) calc(-1 * var(--space-1));
   transition: background 0.15s;
 }
 
@@ -647,7 +647,12 @@
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 0;
+  min-width: 24px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color 0.15s;
   flex-shrink: 0;
 }
@@ -659,8 +664,8 @@
 .app-info-suburl-empty {
   font-size: 13px;
   color: var(--text-muted);
-  text-align: center;
-  padding: 12px 0;
+  text-align: left;
+  padding: 0;
   margin: 0;
 }
 
@@ -668,11 +673,11 @@
 .app-info-add-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   background: var(--surface);
   border: 1px solid var(--accent-border);
   border-radius: 12px;
-  padding: 12px;
+  padding: var(--space-3);
   flex-shrink: 0;
 }
 
@@ -691,13 +696,13 @@
   font-family: monospace;
   background: var(--surface-hover);
   border-radius: 3px;
-  padding: 1px 4px;
+  padding: var(--space-0-5) var(--space-1);
   font-size: 11px;
 }
 
 .app-info-add-form-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   justify-content: flex-end;
 }
 
@@ -708,7 +713,7 @@
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
-  padding: 6px 14px;
+  padding: var(--space-1-5) var(--space-3);
   cursor: pointer;
   transition: background 0.15s;
   font-family: inherit;
@@ -720,12 +725,12 @@
 
 .app-info-add-confirm {
   background: var(--accent);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 8px;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
-  padding: 6px 14px;
+  padding: var(--space-1-5) var(--space-3);
   cursor: pointer;
   transition: background 0.15s;
   font-family: inherit;
@@ -745,7 +750,7 @@
 
 .app-info-footer-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .app-info-delete-btn {
@@ -755,7 +760,7 @@
   color: #fc8181;
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 16px;
+  padding: var(--space-2) var(--space-4);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   font-family: inherit;
@@ -772,7 +777,7 @@
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
-  padding: 8px 16px;
+  padding: var(--space-2) var(--space-4);
   cursor: pointer;
   transition: background 0.15s;
   font-family: inherit;
@@ -784,12 +789,12 @@
 
 .app-info-save-btn {
   background: var(--accent);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 10px;
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
-  padding: 8px 16px;
+  padding: var(--space-2) var(--space-4);
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
   font-family: inherit;

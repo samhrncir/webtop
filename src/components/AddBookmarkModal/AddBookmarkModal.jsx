@@ -117,7 +117,7 @@ export default function AddBookmarkModal({ onClose, onAddBookmark, onAddFolder }
         </div>
 
         {tab === 'bookmark' ? (
-          <form onSubmit={handleSubmitBookmark} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <form onSubmit={handleSubmitBookmark} className="add-modal-form">
             <div className="add-modal-field">
               <label className="add-modal-label">URL</label>
               <input
@@ -149,7 +149,7 @@ export default function AddBookmarkModal({ onClose, onAddBookmark, onAddFolder }
             </button>
           </form>
         ) : (
-          <form onSubmit={handleSubmitFolder} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <form onSubmit={handleSubmitFolder} className="add-modal-form">
             <div className="add-modal-field">
               <label className="add-modal-label">Folder Name</label>
               <input

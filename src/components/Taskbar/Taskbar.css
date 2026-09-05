@@ -9,17 +9,23 @@
   bottom: 0;
   display: flex;
   justify-content: center;
-  padding: 28px 16px 10px;
+  padding: var(--space-6) var(--space-4) var(--space-3);
   pointer-events: none;
   background: linear-gradient(to top, var(--tray-fade) 0%, var(--tray-fade-mid) 60%, transparent 100%);
+}
+
+/* Desktop: keep the pill clear of the home-screen FAB (52px + 16px inset + 20px gap) */
+.app-home-stage .taskbar-wrapper {
+  padding-left: 88px;
+  padding-right: 88px;
 }
 
 .taskbar-pill {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   max-width: 720px;
-  padding: 6px;
+  padding: var(--space-1-5);
   border-radius: 14px;
   background: var(--bottom-bar-bg);
   backdrop-filter: blur(8px);
@@ -38,7 +44,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px;
+  padding: var(--space-1);
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -128,13 +134,14 @@
 
 .taskbar-flyout {
   position: absolute;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + var(--space-4)); /* the pill's padding+border sit 7px above this anchor; land 9px clear of its edge */
   right: 0;
   z-index: 60;
-  display: grid;
-  grid-template-columns: repeat(5, 40px);
-  gap: 8px;
-  padding: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: calc(5 * 40px + 4 * var(--space-2) + 2 * var(--space-2) + 2px); /* five per row, then wrap — the popover shrinks to fit fewer */
+  gap: var(--space-2);
+  padding: var(--space-2);
   border-radius: 12px;
   background: var(--results-bg);
   backdrop-filter: blur(12px);
@@ -149,9 +156,9 @@
   z-index: 100;
   pointer-events: auto; /* wrapper is pointer-events: none */
   /* Opens upward — the bar it belongs to is pinned to the bottom */
-  transform: translateY(calc(-100% - 6px));
+  transform: translateY(calc(-100% - var(--space-1-5)));
   width: 200px;
-  padding: 6px;
+  padding: var(--space-1-5);
   border-radius: 10px;
   background: var(--results-bg);
   backdrop-filter: blur(12px);
@@ -161,7 +168,7 @@
 }
 
 .taskbar-menu-title {
-  padding: 6px 10px 8px;
+  padding: var(--space-1-5) var(--space-3) var(--space-2);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
@@ -169,13 +176,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .taskbar-menu-item {
   display: block;
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--space-2) var(--space-3);
   border: none;
   border-radius: 6px;
   background: transparent;

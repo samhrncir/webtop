@@ -2,11 +2,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   background: var(--surface);
   border: 1px solid var(--border-focus);
   border-radius: 10px;
-  padding: 7px 10px;
+  padding: var(--space-1-5) var(--space-3);
   transition: border-color 0.2s, background 0.2s;
 }
 
@@ -18,15 +18,15 @@
 .tag-input-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   background: var(--accent-light);
   border: 1px solid var(--accent-border);
   border-radius: 999px;
   color: var(--text-primary);
   font-size: 12px;
   font-weight: 600;
-  padding: 3px 4px 3px 10px;
-  line-height: 1.4;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  line-height: 1.2;
 }
 
 .tag-input-pill-remove {
@@ -36,7 +36,7 @@
   color: var(--text-muted);
   font-size: 15px;
   line-height: 1;
-  padding: 0 4px;
+  padding: 0 var(--space-1);
   border-radius: 50%;
   transition: color 0.15s;
   font-family: inherit;
@@ -56,7 +56,7 @@
   font-size: 13px;
   font-family: inherit;
   caret-color: var(--accent);
-  padding: 2px 0;
+  padding: var(--space-0-5) 0;
 }
 
 .tag-input-field::placeholder {
@@ -67,7 +67,7 @@
 .tag-pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .tag-pill {
@@ -79,6 +79,6 @@
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
-  padding: 3px 10px;
-  line-height: 1.4;
+  padding: var(--space-1) var(--space-3);
+  line-height: 1.2;
 }

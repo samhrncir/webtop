@@ -3,39 +3,28 @@
 
 .hidden-bm-picker {
   display: flex;
-  gap: 10px;
+  gap: var(--space-2);
   align-items: center;
-  padding: 14px 16px 6px;
+  padding: var(--space-3) var(--space-4) var(--space-1-5);
 }
 
-.hidden-bm-select {
+/* Outranks .settings-select's 260px cap, which loads later at equal specificity */
+.hidden-bm-picker .hidden-bm-select {
   flex: 1;
-  min-width: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 10px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-}
-
-.hidden-bm-select:focus {
-  border-color: var(--accent-border);
+  max-width: none;
 }
 
 .hidden-bm-hint,
 .hidden-bm-empty {
   margin: 0;
-  padding: 6px 16px 14px;
+  padding: var(--space-1-5) var(--space-4) var(--space-3);
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.5;
 }
 
 .hidden-bm-empty {
-  padding: 16px;
+  padding: var(--space-4);
   text-align: center;
 }
 
@@ -48,12 +37,22 @@
 .hidden-bm-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
 }
 
+/* Inset separator, like .settings-divider on the main page */
 .hidden-bm-row + .hidden-bm-row {
-  border-top: 1px solid var(--border);
+  position: relative;
+}
+.hidden-bm-row + .hidden-bm-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 1px;
+  background: var(--border);
 }
 
 .hidden-bm-icon {
@@ -86,7 +85,7 @@
 .hidden-bm-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5);
   min-width: 0;
   flex: 1;
 }
@@ -110,7 +109,7 @@
 
 .hidden-bm-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
