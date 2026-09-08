@@ -22,13 +22,14 @@ import { pageFromScroll, scrollLeftForPage } from './pageScroll.js'
 // While a tag or favorites filter is active the view flattens to a single
 // vertically scrolling page, like the desktop grid does.
 
-function SortableTile({ id, disabled, children, onEditTap }) {
+function SortableTile({ id, disabled, located, children, onEditTap }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled })
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.25 : 1 }}
-      className="mobile-tile"
+      className={`mobile-tile${located ? ' is-located' : ''}`}
+      data-item-id={id}
       onClick={onEditTap}
       onContextMenu={(e) => e.preventDefault()}
       {...attributes}
@@ -51,6 +52,7 @@ export default function MobilePagedGrid({
   onOpenInfo,
   onDeleteItem,
   onRenameItem,
+  locatedId = null,
 }) {
   const scrollerRef = useRef(null)
   const programmaticScroll = useRef(false)
@@ -103,6 +105,16 @@ export default function MobilePagedGrid({
     if (filtering) setDraggingId(null)
   }, [filtering])
 
+  // Bring the tile "Go to location" landed on into view. The page turn is
+  // already under way; this settles the page's own vertical scroll and
+  // agrees with the pager on the horizontal one
+  useEffect(() => {
+    if (!locatedId) return
+    const tiles = scrollerRef.current?.querySelectorAll('[data-item-id]') ?? []
+    const tile = Array.from(tiles).find((el) => el.dataset.itemId === locatedId)
+    tile?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [locatedId])
+
   const handleDragStart = useCallback(({ active }) => setDraggingId(active.id), [])
 
   const handleDragEnd = useCallback(({ active, over }) => {
@@ -129,7 +141,13 @@ export default function MobilePagedGrid({
   }, [editMode, onOpenInfo])
 
   const renderTile = (item, disabled) => (
-    <SortableTile key={item.id} id={item.id} disabled={disabled} onEditTap={handleEditTap(item)}>
+    <SortableTile
+      key={item.id}
+      id={item.id}
+      disabled={disabled}
+      located={item.id === locatedId}
+      onEditTap={handleEditTap(item)}
+    >
       {item.type === 'folder' ? (
         <FolderIcon
           item={item}

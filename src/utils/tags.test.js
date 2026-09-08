@@ -55,9 +55,9 @@ const data = {
 describe('flattenBookmarks', () => {
   it('walks every page, top level and folder contents, tagging the source', () => {
     expect(flattenBookmarks(data)).toEqual([
-      { item: expect.objectContaining({ id: 'b1' }), pageIdx: 0, inFolder: null },
-      { item: expect.objectContaining({ id: 'c1' }), pageIdx: 0, inFolder: 'Tools' },
-      { item: expect.objectContaining({ id: 'b2' }), pageIdx: 1, inFolder: null },
+      { item: expect.objectContaining({ id: 'b1' }), pageIdx: 0, inFolder: null, folder: null },
+      { item: expect.objectContaining({ id: 'c1' }), pageIdx: 0, inFolder: 'Tools', folder: expect.objectContaining({ id: 'f1' }) },
+      { item: expect.objectContaining({ id: 'b2' }), pageIdx: 1, inFolder: null, folder: null },
     ])
   })
   it('with includeFolders, emits the folder just before its children', () => {

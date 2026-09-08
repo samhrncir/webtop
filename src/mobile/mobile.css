@@ -191,6 +191,12 @@
   padding-bottom: 0;
 }
 
+/* Thumb-sized row in the hold-for-actions menu */
+.mobile-bottombar-search .search-result-menu-item {
+  min-height: 44px;
+  font-size: 14px;
+}
+
 .mobile-bottombar-search .search-results-overlay {
   position: absolute;
   top: auto;

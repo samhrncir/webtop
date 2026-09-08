@@ -10,6 +10,7 @@ export default function MobileBottomBar({
   onSelectTag,
   onNavigateToPage,
   onOpenFolder,
+  onLocate,
   onOpenSettings,
   aiChat,
 }) {
@@ -29,6 +30,7 @@ export default function MobileBottomBar({
           onSelectTag={onSelectTag}
           onNavigateToPage={onNavigateToPage}
           onOpenFolder={onOpenFolder}
+          onLocate={onLocate}
         />
       </div>
       {aiChat && (

@@ -1,6 +1,6 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import MobileShell from './MobileShell.jsx'
 import { ThemeProvider } from '../context/ThemeContext.jsx'
@@ -229,5 +229,65 @@ describe('filters and navigation', () => {
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
     await userEvent.click(screen.getByTitle('Back'))
     expect(screen.getByTestId('mobile-pages')).toBeInTheDocument()
+  })
+})
+
+describe('go to location from search', () => {
+  // A right-click is the browser's own long press (and how Android reports
+  // one); the hold timing itself is specified in useLongPress.test.jsx
+  const search = async (text) => {
+    await userEvent.type(screen.getByRole('combobox'), text)
+    return within(screen.getByRole('listbox'))
+  }
+  const holdResult = (list, name) => fireEvent.contextMenu(list.getByText(name).closest('[role="option"]'))
+  const goToLocation = () => screen.getByRole('menuitem', { name: /Go to location/ })
+
+  it('turns to the bookmark\'s page and flashes its tile instead of opening the link', async () => {
+    mount(twoPages())
+    const list = await search('gamma')
+    holdResult(list, 'gamma')
+    await userEvent.click(goToLocation())
+    expect(window.open).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Go to page 2' }).className).toContain('active')
+    expect(screen.getByText('gamma').closest('.mobile-tile')).toHaveClass('is-located')
+    expect(screen.getByRole('combobox')).toHaveValue('')
+  })
+
+  it('a bookmark inside a folder is shown with its folder open', async () => {
+    mount(twoPages())
+    const list = await search('child')
+    holdResult(list, 'child')
+    await userEvent.click(goToLocation())
+    expect(screen.getByRole('heading', { name: 'Tools' })).toBeInTheDocument()
+    const folderView = within(document.querySelector('.folder-overlay-modal'))
+    expect(folderView.getByText('child').closest('.is-located')).toBeInTheDocument()
+  })
+
+  it('drops an active tag filter so the pager can show the page', async () => {
+    mount(twoPages())
+    await userEvent.click(screen.getByRole('button', { name: /work/ }))
+    expect(screen.queryByTestId('mobile-pages')).not.toBeInTheDocument()
+    const list = await search('alpha')
+    holdResult(list, 'alpha')
+    await userEvent.click(goToLocation())
+    expect(screen.getByTestId('mobile-pages')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('alpha').closest('.mobile-tile')).toHaveClass('is-located')
+  })
+
+  it('the flash fades after a moment', () => {
+    vi.useFakeTimers()
+    try {
+      mount(twoPages())
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: 'gamma' } })
+      holdResult(within(screen.getByRole('listbox')), 'gamma')
+      fireEvent.click(goToLocation())
+      const tile = () => screen.getByText('gamma').closest('.mobile-tile')
+      expect(tile()).toHaveClass('is-located')
+      act(() => vi.advanceTimersByTime(3000))
+      expect(tile()).not.toHaveClass('is-located')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

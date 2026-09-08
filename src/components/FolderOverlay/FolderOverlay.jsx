@@ -18,7 +18,7 @@ import AppIcon from '../AppIcon/AppIcon.jsx'
 import { useDndZoom } from '../../utils/dndZoom.js'
 import './FolderOverlay.css'
 
-function SortableBookmark({ bookmark, editMode, onDelete, onOpen, onInfoOpen, frozen }) {
+function SortableBookmark({ bookmark, editMode, onDelete, onOpen, onInfoOpen, frozen, located }) {
   const {
     attributes,
     listeners,
@@ -38,7 +38,14 @@ function SortableBookmark({ bookmark, editMode, onDelete, onOpen, onInfoOpen, fr
   }
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={located ? 'is-located' : undefined}
+      data-item-id={bookmark.id}
+      {...attributes}
+      {...listeners}
+    >
       <AppIcon
         item={bookmark}
         editMode={editMode}
@@ -63,6 +70,8 @@ export default function FolderOverlay({
   onEjectFromFolder,
   onReorderFolderItems,
   appInfoOpen,
+  // The bookmark "Go to location" opened this folder for, lit and scrolled to
+  locatedId = null,
 }) {
   const [renamingFolder, setRenamingFolder] = useState(false)
   const [folderName, setFolderName] = useState(folder.name)
@@ -74,6 +83,13 @@ export default function FolderOverlay({
   const dndZoom = useDndZoom()
 
   useEffect(() => { setFolderName(folder.name) }, [folder.name])
+
+  useEffect(() => {
+    if (!locatedId) return
+    const tiles = modalRef.current?.querySelectorAll('[data-item-id]') ?? []
+    const tile = Array.from(tiles).find((el) => el.dataset.itemId === locatedId)
+    tile?.scrollIntoView({ block: 'nearest' })
+  }, [locatedId])
 
   const handleKeyDown = useCallback((e) => {
     // App Info stacks above the folder and handles Escape itself
@@ -210,6 +226,7 @@ export default function FolderOverlay({
                     bookmark={bm}
                     editMode={editMode}
                     frozen={pointerOutside}
+                    located={bm.id === locatedId}
                     onOpen={(url) => onOpenBookmark?.(url)}
                     onInfoOpen={() => onOpenAppInfo?.(bm)}
                     onDelete={() => onDeleteFromFolder?.(bm.id, folder.id)}

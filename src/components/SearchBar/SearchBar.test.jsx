@@ -1,8 +1,9 @@
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SearchBar from './SearchBar.jsx'
+import { LONG_PRESS_MS } from '../../hooks/useLongPress.js'
 import { FAVORITES_FILTER } from '../../utils/tags.js'
 
 const data = {
@@ -184,5 +185,93 @@ describe('SearchBar global type-to-search', () => {
     fireEvent.keyDown(document.body, { key: 'g' })
     expect(input()).not.toHaveFocus()
     backdrop.remove()
+  })
+})
+
+describe('holding a result for its actions', () => {
+  // A right-click is the browser's own long press (and how Android reports
+  // one), so it stands in for the finger here; the hold timing itself is
+  // specified in useLongPress.test.jsx
+  const rowOf = (name) => screen.getByText(name).closest('[role="option"]')
+  const hold = (name) => fireEvent.contextMenu(rowOf(name))
+  const goToLocation = () => screen.queryByRole('menuitem', { name: /Go to location/ })
+
+  it('"Go to location" reports where the bookmark lives instead of opening it', async () => {
+    const h = mount({ onLocate: vi.fn() })
+    await userEvent.type(input(), 'figma')
+    hold('Figma')
+    await userEvent.click(goToLocation())
+    expect(h.onLocate).toHaveBeenCalledWith({
+      item: expect.objectContaining({ id: 'c1' }),
+      pageIdx: 0,
+      folder: expect.objectContaining({ id: 'f1' }),
+    })
+    expect(window.open).not.toHaveBeenCalled()
+    expect(h.onNavigateToPage).not.toHaveBeenCalled()
+    expect(input()).toHaveValue('') // search cleared, like opening a result
+    expect(goToLocation()).not.toBeInTheDocument()
+  })
+
+  it('a top-level bookmark reports no folder; folders can be located too', async () => {
+    const h = mount({ onLocate: vi.fn() })
+    await userEvent.type(input(), 'dribbble')
+    hold('Dribbble')
+    await userEvent.click(goToLocation())
+    expect(h.onLocate).toHaveBeenCalledWith({ item: expect.objectContaining({ id: 'b2' }), pageIdx: 1, folder: null })
+
+    await userEvent.type(input(), 'design tools')
+    hold('Design Tools')
+    await userEvent.click(goToLocation())
+    expect(h.onLocate).toHaveBeenLastCalledWith({ item: expect.objectContaining({ id: 'f1' }), pageIdx: 0, folder: null })
+    expect(h.onOpenFolder).not.toHaveBeenCalled()
+  })
+
+  it('a finger held still opens it too, and the lift that ends the hold does not open the link', () => {
+    vi.useFakeTimers()
+    try {
+      mount({ onLocate: vi.fn() })
+      fireEvent.change(input(), { target: { value: 'dribbble' } })
+      const row = rowOf('Dribbble')
+      fireEvent.pointerDown(row, { button: 0, clientX: 5, clientY: 5 })
+      act(() => vi.advanceTimersByTime(LONG_PRESS_MS))
+      fireEvent.pointerUp(row)
+      fireEvent.click(row)
+      expect(goToLocation()).toBeInTheDocument()
+      expect(row).toHaveClass('is-active') // the held row is the active one
+      expect(window.open).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('Escape closes the menu before it clears the query; a press elsewhere or a new query closes it too', async () => {
+    mount({ onLocate: vi.fn() })
+    await userEvent.type(input(), 'github')
+    hold('GitHub')
+    fireEvent.keyDown(input(), { key: 'Escape' })
+    expect(goToLocation()).not.toBeInTheDocument()
+    expect(input()).toHaveValue('github')
+
+    hold('GitHub')
+    fireEvent.pointerDown(document.body)
+    expect(goToLocation()).not.toBeInTheDocument()
+
+    hold('GitHub')
+    fireEvent.change(input(), { target: { value: 'git' } })
+    expect(goToLocation()).not.toBeInTheDocument()
+  })
+
+  it('tag rows have no actions', async () => {
+    mount({ onLocate: vi.fn() })
+    await userEvent.type(input(), 'design')
+    expect(fireEvent.contextMenu(rowOf('#design'))).toBe(true) // native menu kept
+    expect(goToLocation()).not.toBeInTheDocument()
+  })
+
+  it('without onLocate (the desktop shell) rows keep the browser menu and open none of their own', async () => {
+    mount()
+    await userEvent.type(input(), 'github')
+    expect(fireEvent.contextMenu(rowOf('GitHub'))).toBe(true)
+    expect(goToLocation()).not.toBeInTheDocument()
   })
 })

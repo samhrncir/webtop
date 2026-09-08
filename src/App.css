@@ -61,3 +61,21 @@
   /* the last grid row can scroll clear of the floating tray */
   --tray-clearance: var(--tray-height);
 }
+
+/* "Go to location" on a search result flashes the tile it lands on, so the
+   eye finds it once the page has turned (or the folder has opened) */
+.is-located {
+  border-radius: 18px;
+  animation: locate-pulse 0.7s ease-out 3;
+}
+
+@keyframes locate-pulse {
+  from {
+    background: var(--accent-light);
+    box-shadow: 0 0 0 0 var(--accent-glow);
+  }
+  to {
+    background: transparent;
+    box-shadow: 0 0 0 14px transparent;
+  }
+}

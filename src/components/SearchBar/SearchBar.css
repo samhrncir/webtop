@@ -207,3 +207,62 @@
   color: var(--text-muted);
   font-size: 14px;
 }
+
+/* ── Hold a row for its actions ─────────────────────────────── */
+/* A finger resting on a row must not start selecting its text */
+.search-result-item {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* The menu hangs under the held row, aligned with the row's text column.
+   It lives inside the scrolling list so it travels with its row. Being
+   out of flow it adds no height of its own, so the list reserves room for
+   it at the bottom while it is open — a short list grows instead of
+   scrolling the held row's name away to make space. */
+.search-results-overlay.has-menu {
+  padding-bottom: calc(var(--space-2) + 56px);
+}
+
+.search-result-menu {
+  position: absolute;
+  left: calc(var(--space-4) + 36px + var(--space-3));
+  right: var(--space-4);
+  max-width: 260px;
+  margin-top: calc(-1 * var(--space-1));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: var(--space-1-5);
+  background: var(--results-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.search-result-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.search-result-menu-item:hover,
+.search-result-menu-item:focus-visible {
+  background: var(--surface-hover);
+}

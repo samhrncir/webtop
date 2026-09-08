@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { useHomescreen } from '../hooks/useHomescreen.js'
 import { useSettings } from '../context/SettingsContext.jsx'
 import { uiScaleStyle } from '../utils/uiScale.js'
@@ -24,12 +24,17 @@ import './mobile.css'
 
 const openUrl = (url) => window.open(url, '_blank', 'noopener,noreferrer')
 
+// How long the tile "Go to location" lands on stays lit
+const LOCATE_FLASH_MS = 2500
+
 export default function MobileShell() {
   const [view, setView] = useState('home')
   const [activeTag, setActiveTag] = useState(null)
   const [activeFolder, setActiveFolder] = useState(null)
   const [appInfoItem, setAppInfoItem] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
+  // The tile lit by "Go to location": { id, at }
+  const [located, setLocated] = useState(null)
   const { settings } = useSettings()
 
   const {
@@ -99,6 +104,24 @@ export default function MobileShell() {
     setAppInfoItem(null)
   }, [appInfoItem, setHidden])
 
+  // "Go to location" on a search result: drop any filter (the pager only
+  // shows pages unfiltered), turn to the page, open the folder if the item
+  // lives in one, and flash the tile so the eye lands on it
+  const handleLocate = useCallback(({ item, pageIdx, folder }) => {
+    setActiveTag(null)
+    setCurrentPage(pageIdx)
+    setActiveFolder(folder)
+    setLocated({ id: item.id, at: Date.now() })
+  }, [setCurrentPage])
+
+  useEffect(() => {
+    if (!located) return
+    const timer = setTimeout(() => setLocated(null), LOCATE_FLASH_MS)
+    return () => clearTimeout(timer)
+  }, [located])
+
+  const locatedId = located?.id ?? null
+
   return (
     <div className="app mobile-shell" style={uiScaleStyle(settings.uiScale)}>
       {view === 'home' ? (
@@ -133,6 +156,7 @@ export default function MobileShell() {
               onOpenInfo={setAppInfoItem}
               onDeleteItem={handleDeleteItem}
               onRenameItem={handleRenameItem}
+              locatedId={locatedId}
             />
             <Taskbar
               pinned={pinned}
@@ -164,6 +188,7 @@ export default function MobileShell() {
             onSelectTag={setActiveTag}
             onNavigateToPage={setCurrentPage}
             onOpenFolder={(folder, pageIdx) => { setCurrentPage(pageIdx); setActiveFolder(folder) }}
+            onLocate={handleLocate}
             onOpenSettings={() => setView('settings')}
             aiChat={aiChat}
           />
@@ -180,6 +205,7 @@ export default function MobileShell() {
               onEjectFromFolder={(bookmarkId, folderId) => ejectFromFolder(bookmarkId, folderId, pageId)}
               onReorderFolderItems={(folderId, oldIndex, newIndex) => reorderFolderItems(folderId, pageId, oldIndex, newIndex)}
               appInfoOpen={!!appInfoItem}
+              locatedId={locatedId}
             />
           )}
 

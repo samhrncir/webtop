@@ -52,20 +52,20 @@ export function normalizeTagList(list) {
 }
 
 // Every bookmark across every page — top level and inside folders — as
-// { item, pageIdx, inFolder }, in page then grid order. `inFolder` is the
-// containing folder's name, or null. With `includeFolders`, each folder is
-// emitted just before its children, which is the order search results have
-// always been listed in.
+// { item, pageIdx, inFolder, folder }, in page then grid order. `folder` is
+// the containing folder (its name in `inFolder`); both are null at top
+// level. With `includeFolders`, each folder is emitted just before its
+// children, which is the order search results have always been listed in.
 export function flattenBookmarks(data, { includeFolders = false } = {}) {
   const result = []
   data.pages.forEach((page, pageIdx) => {
     page.items.forEach((item) => {
       if (item.type === 'bookmark') {
-        result.push({ item, pageIdx, inFolder: null })
+        result.push({ item, pageIdx, inFolder: null, folder: null })
       } else if (item.type === 'folder') {
-        if (includeFolders) result.push({ item, pageIdx, inFolder: null })
+        if (includeFolders) result.push({ item, pageIdx, inFolder: null, folder: null })
         item.items.forEach((child) => {
-          result.push({ item: child, pageIdx, inFolder: item.name })
+          result.push({ item: child, pageIdx, inFolder: item.name, folder: item })
         })
       }
     })

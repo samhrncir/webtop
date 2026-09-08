@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
+import { useLongPress } from '../../hooks/useLongPress.js'
 import { matchAlias } from '../../utils/aliases.js'
 import { allTags, flattenBookmarks, getTags, itemMatchesQuery, itemMatchesFilter, FAVORITES_FILTER } from '../../utils/tags.js'
 import './SearchBar.css'
@@ -33,15 +34,92 @@ function ResultIcon({ item }) {
   )
 }
 
-export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSelectTag, activeTag = null, typeToFocus = false }) {
+// One row of the results list. Bookmark and folder rows can be held (or
+// right-clicked) for an actions menu when the shell offers one via
+// `onHold`; tag rows have no actions.
+function ResultRow({ result, id, active, activeTag, rowRef, onPick, onHover, onSelectTag, onHold }) {
+  const { bind, consumeLongPress } = useLongPress(result.kind === 'item' && onHold ? onHold : null)
+
+  return (
+    <div
+      id={id}
+      ref={rowRef}
+      className={`search-result-item${active ? ' is-active' : ''}`}
+      role="option"
+      aria-selected={active}
+      onMouseEnter={onHover}
+      {...bind}
+      onClick={() => {
+        // The lift that ends a hold still clicks; the menu is the answer
+        if (consumeLongPress()) return
+        onPick()
+      }}
+    >
+      {result.kind === 'tag' ? (
+        <>
+          <div className="search-result-icon search-result-icon--tag" aria-hidden="true">#</div>
+          <div className="search-result-info">
+            <span className="search-result-name">#{result.tag}</span>
+            <span className="search-result-url">
+              Tag · {result.count} bookmark{result.count === 1 ? '' : 's'} · filter the home screen
+            </span>
+          </div>
+        </>
+      ) : (
+        <>
+          <ResultIcon item={result.item} />
+          <div className="search-result-info">
+            <span className="search-result-name">{result.item.name}</span>
+            {result.item.type === 'bookmark' && (
+              <span className="search-result-url">{result.item.url}</span>
+            )}
+            {result.matchedAlias && (
+              <span className="search-result-alias">alias: {result.matchedAlias}</span>
+            )}
+            {result.inFolder && (
+              <span className="search-result-url">in {result.inFolder}</span>
+            )}
+            {getTags(result.item).length > 0 && (
+              <span className="search-result-tags">
+                {getTags(result.item).map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className={`search-result-tag${tag === activeTag ? ' is-active' : ''}`}
+                    title={`Filter home screen by #${tag}`}
+                    onClick={(e) => { e.stopPropagation(); onSelectTag(tag) }}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </span>
+            )}
+          </div>
+          <span className="search-result-page-badge">
+            p{result.pageIdx + 1}
+          </span>
+        </>
+      )}
+    </div>
+  )
+}
+
+// `onLocate({ item, pageIdx, folder })`, when given, adds a hold / right-click
+// actions menu to bookmark and folder rows whose "Go to location" reports
+// where the item lives instead of opening it.
+export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSelectTag, onLocate, activeTag = null, typeToFocus = false }) {
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
+  // The row whose actions menu is open, and where the menu hangs: { index, top }
+  const [menu, setMenu] = useState(null)
   const inputRef = useRef(null)
   const itemRefs = useRef([])
+  const menuRef = useRef(null)
 
   const handleClear = () => {
     setQuery('')
     setActiveIndex(0)
+    setMenu(null)
     inputRef.current?.focus()
   }
 
@@ -80,6 +158,7 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
   }
 
   const handleResultClick = (result) => {
+    setMenu(null)
     if (result.kind === 'tag') {
       selectTag(result.tag)
       return
@@ -95,8 +174,42 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
     setActiveIndex(0)
   }
 
+  const openMenu = (idx) => {
+    const row = itemRefs.current[idx]
+    setActiveIndex(idx)
+    // The overlay is the rows' offsetParent, so this hangs the menu just
+    // under the held row in the overlay's own coordinates
+    setMenu({ index: idx, top: row ? row.offsetTop + row.offsetHeight : 0 })
+  }
+
+  const handleLocate = (result) => {
+    onLocate?.({ item: result.item, pageIdx: result.pageIdx, folder: result.folder })
+    setMenu(null)
+    setQuery('')
+    setActiveIndex(0)
+  }
+
+  // A press anywhere outside the menu dismisses it
+  useEffect(() => {
+    if (!menu) return
+    const onPointerDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenu(null)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [menu])
+
+  // A menu opened on the last visible row hangs below the list's fold
+  useLayoutEffect(() => {
+    if (menu) menuRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [menu])
+
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
+      if (menu) {
+        setMenu(null)
+        return
+      }
       handleClear()
       return
     }
@@ -144,6 +257,7 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
   }, [activeIndex])
 
   const showOverlay = query.trim().length > 0
+  const menuResult = menu && allResults[menu.index]?.kind === 'item' ? allResults[menu.index] : null
 
   return (
     <div className="search-bar-wrapper">
@@ -162,6 +276,7 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
           onChange={(e) => {
             setQuery(e.target.value)
             setActiveIndex(0)
+            setMenu(null)
           }}
           onKeyDown={handleKeyDown}
           role="combobox"
@@ -179,70 +294,49 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
       </div>
 
       {showOverlay && (
-        <div className="search-results-overlay" id="search-results-listbox" role="listbox">
+        <div
+          className={`search-results-overlay${menuResult ? ' has-menu' : ''}`}
+          id="search-results-listbox"
+          role="listbox"
+        >
           {allResults.length === 0 ? (
             <div className="search-no-results">
               {activeTag === FAVORITES_FILTER ? 'No favorites found' : activeTag ? `No bookmarks tagged “${activeTag}” found` : 'No bookmarks found'}
             </div>
           ) : (
             allResults.map((result, idx) => (
-              <div
+              <ResultRow
                 key={idx}
                 id={`search-result-${idx}`}
-                ref={(el) => (itemRefs.current[idx] = el)}
-                className={`search-result-item${idx === activeIndex ? ' is-active' : ''}`}
-                role="option"
-                aria-selected={idx === activeIndex}
-                onClick={() => handleResultClick(result)}
-                onMouseEnter={() => setActiveIndex(idx)}
-              >
-                {result.kind === 'tag' ? (
-                  <>
-                    <div className="search-result-icon search-result-icon--tag" aria-hidden="true">#</div>
-                    <div className="search-result-info">
-                      <span className="search-result-name">#{result.tag}</span>
-                      <span className="search-result-url">
-                        Tag · {result.count} bookmark{result.count === 1 ? '' : 's'} · filter the home screen
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                  <ResultIcon item={result.item} />
-                  <div className="search-result-info">
-                    <span className="search-result-name">{result.item.name}</span>
-                    {result.item.type === 'bookmark' && (
-                      <span className="search-result-url">{result.item.url}</span>
-                    )}
-                    {result.matchedAlias && (
-                      <span className="search-result-alias">alias: {result.matchedAlias}</span>
-                    )}
-                    {result.inFolder && (
-                      <span className="search-result-url">in {result.inFolder}</span>
-                    )}
-                    {getTags(result.item).length > 0 && (
-                      <span className="search-result-tags">
-                        {getTags(result.item).map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            className={`search-result-tag${tag === activeTag ? ' is-active' : ''}`}
-                            title={`Filter home screen by #${tag}`}
-                            onClick={(e) => { e.stopPropagation(); selectTag(tag) }}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </span>
-                    )}
-                  </div>
-                  <span className="search-result-page-badge">
-                    p{result.pageIdx + 1}
-                  </span>
-                  </>
-                )}
-              </div>
+                result={result}
+                active={idx === activeIndex}
+                activeTag={activeTag}
+                rowRef={(el) => (itemRefs.current[idx] = el)}
+                onPick={() => handleResultClick(result)}
+                onHover={() => setActiveIndex(idx)}
+                onSelectTag={selectTag}
+                onHold={onLocate ? () => openMenu(idx) : null}
+              />
             ))
+          )}
+          {menuResult && (
+            <div
+              ref={menuRef}
+              className="search-result-menu"
+              role="menu"
+              aria-label={`Actions for ${menuResult.item.name}`}
+              style={{ top: menu.top }}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="search-result-menu-item"
+                onClick={() => handleLocate(menuResult)}
+              >
+                <span aria-hidden="true">📍</span>
+                Go to location
+              </button>
+            </div>
           )}
         </div>
       )}
