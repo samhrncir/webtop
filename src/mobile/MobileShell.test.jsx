@@ -231,3 +231,44 @@ describe('filters and navigation', () => {
     expect(screen.getByTestId('mobile-pages')).toBeInTheDocument()
   })
 })
+
+describe('the hidden bookmarks home screen', () => {
+  const withHidden = () => ({
+    pages: [page('p1', 'a')],
+    items: [bm('alpha', 'p1', 'a'), bm('ghost', 'p1', 'b', { hidden: true })],
+  })
+
+  it('the 🕶️ button swaps the home grid for the incognito screen; back returns', async () => {
+    mount(withHidden())
+    expect(screen.queryByText('ghost')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hidden bookmarks' }))
+    expect(screen.getByRole('heading', { name: 'Hidden bookmarks' })).toBeInTheDocument()
+    expect(screen.getByText('ghost')).toBeInTheDocument()
+    expect(screen.queryByTestId('mobile-pages')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back to home screen' }))
+    expect(screen.getByTestId('mobile-pages')).toBeInTheDocument()
+    expect(screen.queryByText('ghost')).not.toBeInTheDocument()
+  })
+
+  it('Settings > Hidden Bookmarks lands on the same screen', async () => {
+    mount(withHidden())
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    expect(screen.getByText('1 hidden')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '🕶️ Open ›' }))
+    expect(screen.getByRole('heading', { name: 'Hidden bookmarks' })).toBeInTheDocument()
+  })
+
+  it('"Show on home screen" from the sheet puts the bookmark back on the grid', async () => {
+    mount(withHidden())
+    await userEvent.click(screen.getByRole('button', { name: 'Hidden bookmarks' }))
+    await userEvent.click(screen.getByRole('button', { name: /Edit/ }))
+    await userEvent.click(screen.getByTitle('ghost'))
+    await userEvent.click(screen.getByRole('button', { name: /Show on home screen/ }))
+    expect(screen.getByText(/Nothing hidden ·/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back to home screen' }))
+    expect(screen.getByText('ghost')).toBeInTheDocument()
+  })
+})

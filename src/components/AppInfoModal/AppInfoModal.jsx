@@ -80,7 +80,7 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
   )
 }
 
-export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, onToggleFavorite, onToggleAccount, onHide, tagSuggestions = [] }) {
+export default function AppInfoModal({ item, onClose, onSave, onDelete, onTogglePin, onToggleFavorite, onToggleAccount, onHide, onUnhide, tagSuggestions = [] }) {
   const [name, setName] = useState(item.name)
   const [url, setUrl] = useState(item.url)
   const [icon, setIcon] = useState(item.icon || '')
@@ -427,21 +427,35 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                 {item.hasAccount ? 'Have account' : 'No account'}
               </button>
             )}
-            <button
-              className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
-              onClick={onTogglePin}
-            >
-              <span className="app-info-pin-icon">📌</span>
-              {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
-            </button>
+            {/* The taskbar only draws from the visible grid, so the hidden
+                home screen leaves the pin action out */}
+            {onTogglePin && (
+              <button
+                className={`app-info-pin-btn${item.pinned ? ' pinned' : ''}`}
+                onClick={onTogglePin}
+              >
+                <span className="app-info-pin-icon">📌</span>
+                {item.pinned ? 'Unpin from taskbar' : 'Pin to taskbar'}
+              </button>
+            )}
             {onHide && (
               <button
                 className="app-info-pin-btn"
                 onClick={onHide}
-                title="Hidden bookmarks are listed under Settings"
+                title="Hidden bookmarks live on their own incognito home screen (🕶️ in the toolbar)"
               >
                 <span className="app-info-pin-icon">🙈</span>
                 Hide from home screen
+              </button>
+            )}
+            {onUnhide && (
+              <button
+                className="app-info-pin-btn"
+                onClick={onUnhide}
+                title="Puts the bookmark back on the first home screen page with room"
+              >
+                <span className="app-info-pin-icon">🙉</span>
+                Show on home screen
               </button>
             )}
           </div>

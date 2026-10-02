@@ -119,8 +119,9 @@ The mobile shell owns its screens: a scroll-snap paged grid
 (`MobilePagedGrid`), a bottom search/settings/AI-chat bar
 (`MobileBottomBar`), and App Info restyled as a bottom sheet
 (`mobile.css`'s `.mobile-sheet-host`). It reuses leaf components
-(AppIcon, FolderIcon, Taskbar, overlays, SettingsPage) but composes them
-itself; `src/shells/HomescreenApp.jsx` is the desktop composition. The
+(AppIcon, FolderIcon, Taskbar, overlays, SettingsPage, IncognitoScreen —
+the hidden bookmarks' own home screen) but composes them itself;
+`src/shells/HomescreenApp.jsx` is the desktop composition. The
 shells are lazy chunks — never import one from the other's tree.
 
 Override for development: append `?shell=mobile` or `?shell=desktop` to

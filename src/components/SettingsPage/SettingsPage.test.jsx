@@ -33,7 +33,7 @@ function mount(props = {}) {
     onBack: vi.fn(),
     importData: vi.fn(),
     exportData: vi.fn(),
-    setHidden: vi.fn(),
+    onOpenHidden: vi.fn(),
     restorePage: vi.fn(),
     restoreFolder: vi.fn(),
     ...props,
@@ -44,7 +44,6 @@ function mount(props = {}) {
         <SettingsPage
           data={props.data ?? data}
           hiddenBookmarks={props.hiddenBookmarks ?? []}
-          visibleBookmarks={[]}
           trash={props.trash ?? { pages: [], folders: [] }}
           {...handlers}
         />
@@ -274,19 +273,12 @@ describe('AI chat target', () => {
 })
 
 describe('sub-pages', () => {
-  it('Hidden Bookmarks opens as a sub-page; back returns to Settings before leaving', async () => {
+  it('the Hidden Bookmarks row counts them and opens their incognito home screen', async () => {
     const h = mount({ hiddenBookmarks: [{ id: 'h1', name: 'Secret', url: 'https://s.test' }] })
     expect(screen.getByText('1 hidden')).toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Manage ›' }))
-    expect(screen.getByRole('heading', { name: 'Hidden Bookmarks' })).toBeInTheDocument()
-
-    await userEvent.click(screen.getByTitle('Back'))
-    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '🕶️ Open ›' }))
+    expect(h.onOpenHidden).toHaveBeenCalled()
     expect(h.onBack).not.toHaveBeenCalled()
-
-    await userEvent.click(screen.getByTitle('Back'))
-    expect(h.onBack).toHaveBeenCalled()
   })
 
   it('the Recycle Bin sub-page shows its counts on the settings row', async () => {

@@ -261,3 +261,13 @@ describe('deleting', () => {
     expect(h.onClose).toHaveBeenCalled()
   })
 })
+
+describe('on the hidden bookmarks home screen', () => {
+  it('offers "Show on home screen" and leaves out Hide and the taskbar pin', async () => {
+    const h = mount({}, { onHide: undefined, onTogglePin: undefined, onUnhide: vi.fn() })
+    expect(screen.queryByRole('button', { name: /Hide from home screen/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /taskbar/ })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Show on home screen/ }))
+    expect(h.onUnhide).toHaveBeenCalled()
+  })
+})

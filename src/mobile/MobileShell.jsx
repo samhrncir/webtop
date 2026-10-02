@@ -12,19 +12,23 @@ import FolderOverlay from '../components/FolderOverlay/FolderOverlay.jsx'
 import AppInfoModal from '../components/AppInfoModal/AppInfoModal.jsx'
 import AddBookmarkModal from '../components/AddBookmarkModal/AddBookmarkModal.jsx'
 import SettingsPage from '../components/SettingsPage/SettingsPage.jsx'
+import IncognitoScreen from '../components/IncognitoScreen/IncognitoScreen.jsx'
 import MobilePagedGrid from './MobilePagedGrid.jsx'
 import MobileBottomBar from './MobileBottomBar.jsx'
 import './mobile.css'
 
 // Touch-first shell for the Android app and coarse-pointer browsers.
-// Layout, top to bottom: status row (clock + edit toggle), tag chips, the
-// paged grid with the pinned-apps tray floating over its bottom, page dots,
-// and a thumb-reachable bottom bar (settings / search / AI chat). App Info
-// opens as a bottom sheet, the native Android pattern.
+// Layout, top to bottom: status row (clock, hidden-screen and edit toggles),
+// tag chips, the paged grid with the pinned-apps tray floating over its
+// bottom, page dots, and a thumb-reachable bottom bar (settings / search /
+// AI chat). App Info opens as a bottom sheet, the native Android pattern.
+// Settings and the hidden bookmarks' incognito home screen each take over
+// the whole screen.
 
 const openUrl = (url) => window.open(url, '_blank', 'noopener,noreferrer')
 
 export default function MobileShell() {
+  // 'home' | 'hidden' | 'settings'
   const [view, setView] = useState('home')
   const [activeTag, setActiveTag] = useState(null)
   const [activeFolder, setActiveFolder] = useState(null)
@@ -37,7 +41,7 @@ export default function MobileShell() {
     editMode, toggleEditMode,
     addBookmark, addFolder, deleteItem, renameItem, updateBookmark,
     pinned, togglePin, reorderPinned, toggleFavorite, toggleAccount,
-    hidden, setHidden, trash, restorePage, restoreFolder,
+    hidden, setHidden, reorderHidden, trash, restorePage, restoreFolder,
     removeFromFolder, ejectFromFolder, reorderFolderItems,
     addPage, deletePage, importData, exportData, reorderItems,
   } = useHomescreen()
@@ -105,12 +109,22 @@ export default function MobileShell() {
         <>
           <div className="mobile-topbar">
             <Clock />
-            <button
-              className={`mobile-topbar-btn${editMode ? ' active' : ''}`}
-              onClick={toggleEditMode}
-            >
-              {editMode ? '✓ Done' : '✏️ Edit'}
-            </button>
+            <div className="mobile-topbar-actions">
+              <button
+                className="mobile-topbar-btn"
+                onClick={() => setView('hidden')}
+                title="Hidden bookmarks"
+                aria-label="Hidden bookmarks"
+              >
+                🕶️
+              </button>
+              <button
+                className={`mobile-topbar-btn${editMode ? ' active' : ''}`}
+                onClick={toggleEditMode}
+              >
+                {editMode ? '✓ Done' : '✏️ Edit'}
+              </button>
+            </div>
           </div>
 
           <TagFilterBar
@@ -208,16 +222,33 @@ export default function MobileShell() {
             />
           )}
         </>
+      ) : view === 'hidden' ? (
+        <div className="mobile-incognito">
+          <IncognitoScreen
+            hiddenBookmarks={hidden}
+            visibleBookmarks={flattenBookmarks(data)}
+            setHidden={setHidden}
+            reorderHidden={reorderHidden}
+            deleteItem={deleteItem}
+            renameItem={renameItem}
+            updateBookmark={updateBookmark}
+            toggleFavorite={toggleFavorite}
+            toggleAccount={toggleAccount}
+            tagSuggestions={tagList.map((t) => t.tag)}
+            onBack={() => setView('home')}
+            touchUi
+            infoHostClassName="mobile-sheet-host"
+          />
+        </div>
       ) : (
         <div className="mobile-settings">
           <SettingsPage
             onBack={() => setView('home')}
+            onOpenHidden={() => setView('hidden')}
             importData={importData}
             exportData={exportData}
             data={data}
             hiddenBookmarks={hidden}
-            visibleBookmarks={flattenBookmarks(data)}
-            setHidden={setHidden}
             trash={trash}
             restorePage={restorePage}
             restoreFolder={restoreFolder}
