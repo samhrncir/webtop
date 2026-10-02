@@ -73,6 +73,14 @@ export function flattenBookmarks(data, { includeFolders = false } = {}) {
   return result
 }
 
+// Bookmarks in a list of grid items, folder contents included
+export function countBookmarks(items) {
+  return (items || []).reduce(
+    (n, item) => n + (item.type === 'folder' ? (item.items?.length || 0) : 1),
+    0
+  )
+}
+
 // Unique tags in use, alphabetical, with how many apps carry each
 export function allTags(data) {
   const counts = new Map()

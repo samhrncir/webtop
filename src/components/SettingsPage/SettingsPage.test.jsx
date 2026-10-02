@@ -43,7 +43,7 @@ function mount(props = {}) {
       <SettingsProvider>
         <SettingsPage
           data={props.data ?? data}
-          hiddenBookmarks={props.hiddenBookmarks ?? []}
+          hiddenItems={props.hiddenItems ?? []}
           trash={props.trash ?? { pages: [], folders: [] }}
           {...handlers}
         />
@@ -274,8 +274,13 @@ describe('AI chat target', () => {
 
 describe('sub-pages', () => {
   it('the Hidden Bookmarks row counts them and opens their incognito home screen', async () => {
-    const h = mount({ hiddenBookmarks: [{ id: 'h1', name: 'Secret', url: 'https://s.test' }] })
-    expect(screen.getByText('1 hidden')).toBeInTheDocument()
+    const h = mount({
+      hiddenItems: [
+        { id: 'h1', type: 'bookmark', name: 'Secret', url: 'https://s.test' },
+        { id: 'f1', type: 'folder', name: 'Vault', items: [{ id: 'c1', type: 'bookmark', name: 'In', url: 'https://in.test' }] },
+      ],
+    })
+    expect(screen.getByText('2 hidden')).toBeInTheDocument() // bookmarks, folder contents included
     await userEvent.click(screen.getByRole('button', { name: '🕶️ Open ›' }))
     expect(h.onOpenHidden).toHaveBeenCalled()
     expect(h.onBack).not.toHaveBeenCalled()

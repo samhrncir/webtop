@@ -148,3 +148,28 @@
   border-color: var(--accent);
   color: #ffffff;
 }
+
+/* Hidden folders (the incognito home screen) offer the way back to the grid */
+.folder-overlay-unhide {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: var(--space-1-5) var(--space-3);
+  min-height: 32px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.folder-overlay-unhide:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
