@@ -13,7 +13,7 @@ import {
   mergeRows, ensureLivePage,
   pullRows, pushRows, subscribeToChanges,
 } from '../utils/syncV2.js'
-import { positionBetween } from '../utils/fractional.js'
+import { positionBetween, seqPositions } from '../utils/fractional.js'
 
 // ---------- row query helpers ----------
 
@@ -46,8 +46,24 @@ function visibleRows(rows) {
   return { ...rows, items: rows.items.filter((i) => !isHiddenRow(i)) }
 }
 
+// The hidden home screen has its own drag order, kept in the content blob
+// like taskbar pins. Rows hidden before that order existed carry no key and
+// sort first, alphabetically, until the first drag keys the whole list.
+const hiddenPosition = (row) => row.content?.hiddenPosition || ''
+
+function byHiddenPosition(a, b) {
+  const pa = hiddenPosition(a)
+  const pb = hiddenPosition(b)
+  if (pa !== pb) return pa < pb ? -1 : 1
+  const byName = (a.content?.name || '').localeCompare(b.content?.name || '')
+  if (byName !== 0) return byName
+  return a.id < b.id ? -1 : 1
+}
+
 function liveHidden(rows) {
-  return rows.items.filter((i) => !i.deleted_at && i.type === 'bookmark' && isHiddenRow(i))
+  return rows.items
+    .filter((i) => !i.deleted_at && i.type === 'bookmark' && isHiddenRow(i))
+    .sort(byHiddenPosition)
 }
 
 const PAGE_CAPACITY = 20
@@ -171,12 +187,11 @@ export function useHomescreen() {
 
   const data = useMemo(() => rowsToNested(visibleRows(rows)), [rows])
 
-  // Flat list of hidden bookmarks for the settings page. They have no
-  // position of their own — unhiding appends to the next free slot.
+  // The hidden home screen's grid, in its own drag order. A hidden row keeps
+  // its page row only as a parking spot — unhiding appends to the next free
+  // slot rather than restoring wherever it used to sit.
   const hidden = useMemo(
-    () => liveHidden(rows)
-      .map((r) => ({ id: r.id, type: 'bookmark', ...r.content }))
-      .sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    () => liveHidden(rows).map((r) => ({ id: r.id, type: 'bookmark', ...r.content })),
     [rows]
   )
 
@@ -614,10 +629,12 @@ export function useHomescreen() {
     const content = { ...target.content }
     if (hiddenFlag) {
       content.hidden = true
+      content.hiddenPosition = endPosition(liveHidden(rowsNow), hiddenPosition)
       applyRowChanges({ items: [{ ...target, content, folder_id: null, updated_at: now }] })
       return
     }
     delete content.hidden
+    delete content.hiddenPosition
     const { pageId, newPage } = nextFreeSlot(rowsNow)
     applyRowChanges({
       pages: newPage ? [newPage] : [],
@@ -629,6 +646,33 @@ export function useHomescreen() {
         position: endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
         updated_at: now,
       }],
+    })
+  }, [applyRowChanges])
+
+  // Drag-reorder on the hidden home screen. Rows from before the order
+  // existed have no key: the first drag keys the whole list in its current
+  // order first, so the move lands exactly where it was dropped.
+  const reorderHidden = useCallback((oldIndex, newIndex) => {
+    const now = nowIso()
+    let list = liveHidden(rowsRef.current)
+    if (!list[oldIndex]) return
+    const keyed = list.every(hiddenPosition)
+    if (!keyed) {
+      const keys = seqPositions(list.length)
+      list = list.map((row, i) => ({
+        ...row,
+        content: { ...row.content, hiddenPosition: keys[i] },
+        updated_at: now,
+      }))
+    }
+    const moved = list[oldIndex]
+    const movedRow = {
+      ...moved,
+      content: { ...moved.content, hiddenPosition: positionAt(list, newIndex, moved.id, hiddenPosition) },
+      updated_at: now,
+    }
+    applyRowChanges({
+      items: keyed ? [movedRow] : list.map((row) => (row.id === moved.id ? movedRow : row)),
     })
   }, [applyRowChanges])
 
@@ -731,6 +775,7 @@ export function useHomescreen() {
     toggleAccount,
     hidden,
     setHidden,
+    reorderHidden,
     trash,
     restorePage,
     restoreFolder,

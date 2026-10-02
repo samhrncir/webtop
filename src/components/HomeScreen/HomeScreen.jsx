@@ -82,6 +82,7 @@ export default function HomeScreen({
   reorderFolderItems,
   addPage,
   onOpenSettings,
+  onOpenHidden,
   aiChat,
   folderToOpen,
   clearFolderToOpen,
@@ -436,6 +437,14 @@ export default function HomeScreen({
             title={aiChat ? `Open ${aiChat.name}` : 'Choose your AI chat in Settings'}
           >
             💬 AI Chat
+          </button>
+          <button
+            className="homescreen-toolbar-btn"
+            onClick={onOpenHidden}
+            title="Hidden bookmarks"
+            aria-label="Hidden bookmarks"
+          >
+            🕶️
           </button>
           <button
             className="homescreen-toolbar-btn"

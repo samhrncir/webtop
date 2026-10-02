@@ -461,3 +461,66 @@ describe('edit mode', () => {
     expect(result.current.editMode).toBe(false)
   })
 })
+
+describe('the hidden home screen order', () => {
+  const three = () => ({
+    pages: [page('p1', 'a')],
+    items: [bm('a', 'p1', 'a'), bm('b', 'p1', 'b'), bm('c', 'p1', 'c')],
+  })
+  const hiddenIds = (hs) => hs.hidden.map((h) => h.id)
+
+  it('newly hidden bookmarks land at the end, in the order they were hidden', () => {
+    const { result } = mount(three())
+    act(() => result.current.setHidden('c', true))
+    act(() => result.current.setHidden('a', true))
+    expect(hiddenIds(result.current)).toEqual(['c', 'a'])
+  })
+
+  it('reorderHidden drops a bookmark where it was dragged, and the order is saved', () => {
+    const { result } = mount(three())
+    act(() => result.current.setHidden('a', true))
+    act(() => result.current.setHidden('b', true))
+    act(() => result.current.setHidden('c', true))
+
+    act(() => result.current.reorderHidden(2, 0))
+    expect(hiddenIds(result.current)).toEqual(['c', 'a', 'b'])
+    act(() => result.current.reorderHidden(0, 1))
+    expect(hiddenIds(result.current)).toEqual(['a', 'c', 'b'])
+
+    const stored = JSON.parse(localStorage.getItem('browserhome_rows'))
+    const keyOf = (id) => stored.items.find((i) => i.id === id).content.hiddenPosition
+    expect(keyOf('a') < keyOf('c') && keyOf('c') < keyOf('b')).toBe(true)
+  })
+
+  it('bookmarks hidden before the order existed stay alphabetical until the first drag', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a')],
+      items: [
+        bm('zeta', 'p1', 'a', { hidden: true }),
+        bm('alpha', 'p1', 'b', { hidden: true }),
+        bm('mid', 'p1', 'c', { hidden: true }),
+        bm('shown', 'p1', 'd'),
+      ],
+    })
+    expect(hiddenIds(result.current)).toEqual(['alpha', 'mid', 'zeta'])
+
+    act(() => result.current.reorderHidden(2, 0))
+    expect(hiddenIds(result.current)).toEqual(['zeta', 'alpha', 'mid'])
+
+    // The drag keyed every row, so a later hide appends rather than sorting in
+    act(() => result.current.setHidden('shown', true))
+    expect(hiddenIds(result.current)).toEqual(['zeta', 'alpha', 'mid', 'shown'])
+  })
+
+  it('unhiding forgets the slot, so hiding again appends at the end', () => {
+    const { result } = mount(three())
+    act(() => result.current.setHidden('a', true))
+    act(() => result.current.setHidden('b', true))
+    act(() => result.current.setHidden('a', false))
+    expect(gridIds(result.current).includes('a')).toBe(true)
+    expect(result.current.data.pages[0].items.find((i) => i.id === 'a').hiddenPosition).toBeUndefined()
+
+    act(() => result.current.setHidden('a', true))
+    expect(hiddenIds(result.current)).toEqual(['b', 'a'])
+  })
+})

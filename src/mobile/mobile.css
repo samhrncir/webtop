@@ -294,3 +294,44 @@
   flex: 1;
   min-height: 0;
 }
+
+/* ── Top bar actions (hidden-screen toggle + edit) ───────────── */
+.mobile-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ── Hidden bookmarks' incognito home screen, full-screen ────── */
+.mobile-incognito {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Thumb-sized controls */
+.mobile-incognito .incognito-back {
+  width: 44px;
+  height: 44px;
+}
+
+.mobile-incognito .incognito-btn {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Same four-across grid as the paged home grid */
+.mobile-incognito .incognito-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-2);
+  justify-items: center;
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) + 72px);
+  max-width: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .mobile-incognito .incognito-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}

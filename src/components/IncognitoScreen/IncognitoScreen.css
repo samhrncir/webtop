@@ -1,0 +1,378 @@
+/* The hidden bookmarks' home screen is always dark, whatever the app theme:
+   the shared tokens are redefined here so the reused leaf components
+   (AppIcon, AppInfoModal) dress to match without knowing where they are.
+   Charcoal and slate in place of the home screen's indigo and purple. */
+.incognito-screen {
+  --text-primary: #e8eaed;
+  --text-secondary: rgba(232, 234, 237, 0.72);
+  --text-muted: rgba(232, 234, 237, 0.5);
+  --surface: rgba(255, 255, 255, 0.08);
+  --surface-hover: rgba(255, 255, 255, 0.16);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-focus: rgba(255, 255, 255, 0.24);
+  --searchbar-bg: rgba(0, 0, 0, 0.35);
+  --modal-bg: rgba(32, 33, 36, 0.98);
+  --folder-modal-bg: rgba(32, 33, 36, 0.96);
+  --results-bg: rgba(32, 33, 36, 0.97);
+  --icon-img-bg: rgba(255, 255, 255, 0.06);
+  --empty-slot-bg: rgba(255, 255, 255, 0.07);
+  --rename-bg: rgba(0, 0, 0, 0.6);
+  --dot-inactive: rgba(255, 255, 255, 0.25);
+  --icon-label-color: rgba(232, 234, 237, 0.92);
+  --icon-label-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  --accent: #5f6368;
+  --accent-hover: #70757a;
+  --accent-light: rgba(154, 160, 166, 0.18);
+  --accent-border: rgba(154, 160, 166, 0.45);
+  --accent-glow: rgba(0, 0, 0, 0.55);
+
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text-primary);
+  color-scheme: dark;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% -10%, rgba(138, 180, 248, 0.14), transparent 70%),
+    linear-gradient(160deg, #2b2c30 0%, #202124 45%, #17181b 100%);
+}
+
+.incognito-mark {
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.incognito-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.incognito-back {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  font-size: 24px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  padding-bottom: var(--space-0-5);
+}
+
+.incognito-back:hover {
+  background: var(--surface-hover);
+}
+
+.incognito-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+}
+
+.incognito-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.incognito-heading {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.incognito-subheading {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* One button look for the toolbar and the picker's actions */
+.incognito-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: var(--space-1-5) var(--space-3);
+  min-height: 32px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
+}
+
+.incognito-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.incognito-btn.edit-active {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+/* Light on dark: the inverse of the home screen's filled purple */
+.incognito-btn--primary {
+  background: #e8eaed;
+  border-color: transparent;
+  color: #202124;
+}
+
+.incognito-btn--primary:hover {
+  background: #ffffff;
+  color: #202124;
+}
+
+.incognito-btn--primary:disabled,
+.incognito-btn--primary:disabled:hover {
+  opacity: 0.45;
+  cursor: default;
+  background: #e8eaed;
+}
+
+/* ── Grid ────────────────────────────────────────────────────── */
+.incognito-grid-area {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+}
+
+/* Same column maths as the home grid (HomeScreen.css): as many 72px columns
+   as fit, capped by Settings > Grid columns. One vertically scrolling page —
+   hidden bookmarks have no pages to swipe between. */
+.incognito-grid {
+  --grid-max-cols: 4;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 72px);
+  grid-auto-rows: 96px;
+  gap: var(--space-4);
+  /* bottom room so the last row scrolls clear of the + button */
+  padding: var(--space-6) var(--space-6) calc(var(--space-6) + 72px);
+  justify-content: center;
+  align-content: start;
+  height: 100%;
+  width: 100%;
+  max-width: calc(var(--grid-max-cols) * 88px + 32px + 16px);
+  margin: 0 auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-border) transparent;
+}
+
+@media (max-width: 400px) {
+  .incognito-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-4) var(--space-2);
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+}
+
+.incognito-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.incognito-tile.is-dragging {
+  opacity: 0.3;
+}
+
+.incognito-drag-overlay {
+  opacity: 0.9;
+  transform: scale(1.08);
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6));
+  pointer-events: none;
+}
+
+.incognito-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(320px, 80%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  color: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+}
+
+.incognito-empty p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.incognito-empty p:first-of-type {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── + button: hide a bookmark ─────────────────────────────── */
+.incognito-fab {
+  position: absolute;
+  bottom: var(--space-5);
+  right: var(--space-4);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #e8eaed;
+  border: none;
+  color: #202124;
+  font-size: 28px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  transition: background 0.15s, transform 0.15s;
+  z-index: 40;
+}
+
+.incognito-fab:hover {
+  background: #ffffff;
+  transform: scale(1.08);
+}
+
+.incognito-fab:active {
+  transform: scale(0.96);
+}
+
+/* ── Hide picker ─────────────────────────────────────────────── */
+.incognito-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.18s ease;
+}
+
+.incognito-picker {
+  background: var(--modal-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+  padding: var(--space-6);
+  width: 360px;
+  max-width: calc((100vw - 2 * var(--space-4)) / var(--ui-zoom, 1));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: scaleIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.incognito-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.incognito-picker-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.incognito-picker-close {
+  background: var(--surface);
+  border: none;
+  color: var(--text-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.incognito-picker-close:hover {
+  background: var(--surface-hover);
+}
+
+.incognito-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 40px;
+  width: 100%;
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.incognito-select:focus {
+  border-color: var(--accent-border);
+}
+
+.incognito-select option {
+  background: #202124;
+  color: #e8eaed;
+}
+
+.incognito-picker-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.incognito-picker-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.incognito-picker-actions .incognito-btn {
+  flex: 1;
+  min-height: 40px;
+}
