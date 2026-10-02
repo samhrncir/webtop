@@ -62,6 +62,8 @@ export default function FolderOverlay({
   onRenameFolder,
   onEjectFromFolder,
   onReorderFolderItems,
+  // Hidden folders (the incognito home screen) get a way back to the grid
+  onUnhide,
   appInfoOpen,
 }) {
   const [renamingFolder, setRenamingFolder] = useState(false)
@@ -190,6 +192,15 @@ export default function FolderOverlay({
               >
                 {folder.name}
               </h2>
+            )}
+            {onUnhide && (
+              <button
+                className="folder-overlay-unhide"
+                onClick={onUnhide}
+                title="Puts the folder and its bookmarks back on the first home screen page with room"
+              >
+                <span aria-hidden="true">🙉</span> Show on home screen
+              </button>
             )}
             <button className="folder-overlay-close" onClick={onClose} aria-label="Close folder">
               &times;

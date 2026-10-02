@@ -41,7 +41,8 @@ export default function MobileShell() {
     editMode, toggleEditMode,
     addBookmark, addFolder, deleteItem, renameItem, updateBookmark,
     pinned, togglePin, reorderPinned, toggleFavorite, toggleAccount,
-    hidden, setHidden, reorderHidden, trash, restorePage, restoreFolder,
+    hidden, setHidden, reorderHidden, addHiddenFolder, trash, restorePage, restoreFolder,
+    addToFolder,
     removeFromFolder, ejectFromFolder, reorderFolderItems,
     addPage, deletePage, importData, exportData, reorderItems,
   } = useHomescreen()
@@ -225,10 +226,15 @@ export default function MobileShell() {
       ) : view === 'hidden' ? (
         <div className="mobile-incognito">
           <IncognitoScreen
-            hiddenBookmarks={hidden}
-            visibleBookmarks={flattenBookmarks(data)}
+            hiddenItems={hidden}
+            visibleItems={flattenBookmarks(data, { includeFolders: true })}
             setHidden={setHidden}
             reorderHidden={reorderHidden}
+            addHiddenFolder={addHiddenFolder}
+            addToFolder={addToFolder}
+            removeFromFolder={removeFromFolder}
+            ejectFromFolder={ejectFromFolder}
+            reorderFolderItems={reorderFolderItems}
             deleteItem={deleteItem}
             renameItem={renameItem}
             updateBookmark={updateBookmark}
@@ -248,7 +254,7 @@ export default function MobileShell() {
             importData={importData}
             exportData={exportData}
             data={data}
-            hiddenBookmarks={hidden}
+            hiddenItems={hidden}
             trash={trash}
             restorePage={restorePage}
             restoreFolder={restoreFolder}

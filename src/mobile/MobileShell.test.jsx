@@ -272,3 +272,23 @@ describe('the hidden bookmarks home screen', () => {
     expect(screen.getByText('ghost')).toBeInTheDocument()
   })
 })
+
+describe('folders on the hidden bookmarks home screen', () => {
+  it('hidden folders show on the screen and open to their contents', async () => {
+    mount({
+      pages: [page('p1', 'a')],
+      items: [
+        bm('alpha', 'p1', 'a'),
+        { ...folder('vault', 'p1', 'b', 'Vault'), content: { name: 'Vault', hidden: true } },
+        bm('inside', 'p1', 'a', { hidden: true }, { folder_id: 'vault' }),
+      ],
+    })
+    expect(screen.queryByText('Vault')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hidden bookmarks' }))
+    expect(screen.getByText(/1 hidden/)).toBeInTheDocument()
+    await userEvent.click(screen.getByTitle('Vault'))
+    expect(screen.getByRole('heading', { name: 'Vault' })).toBeInTheDocument()
+    expect(screen.getByText('inside')).toBeInTheDocument()
+  })
+})

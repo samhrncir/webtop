@@ -37,33 +37,59 @@ function liveItem(rows, itemId) {
   return rows.items.find((i) => i.id === itemId && !i.deleted_at)
 }
 
-// Hidden bookmarks keep their page/folder rows (and survive export/import)
-// but are dropped from the homescreen view. Every index-based edit has to
-// work off this filtered set so drag indices line up with what's on screen.
+// Every row lives in one of two spaces: the visible grid, or the hidden
+// home screen (content.hidden). A hidden folder's children are hidden too.
+// Hidden rows keep a page row as a parking spot (and survive export/import)
+// but are dropped from the homescreen view, so every index-based edit has
+// to work off the right space for drag indices to line up with the screen.
 const isHiddenRow = (row) => !!row.content?.hidden
 
-function visibleRows(rows) {
-  return { ...rows, items: rows.items.filter((i) => !isHiddenRow(i)) }
+function spaceRows(rows, hidden) {
+  return { ...rows, items: rows.items.filter((i) => isHiddenRow(i) === hidden) }
 }
 
-// The hidden home screen has its own drag order, kept in the content blob
-// like taskbar pins. Rows hidden before that order existed carry no key and
-// sort first, alphabetically, until the first drag keys the whole list.
-const hiddenPosition = (row) => row.content?.hiddenPosition || ''
+function visibleRows(rows) {
+  return spaceRows(rows, false)
+}
 
-function byHiddenPosition(a, b) {
-  const pa = hiddenPosition(a)
-  const pb = hiddenPosition(b)
-  if (pa !== pb) return pa < pb ? -1 : 1
+// Folder contents are read in the folder's own space
+function folderSpace(rows, folder) {
+  return spaceRows(rows, isHiddenRow(folder))
+}
+
+// The hidden home screen is one page ordered by position, like any other.
+// Rows hidden before it had an order of its own kept the keys of whichever
+// page they came from, which can collide; name then id keeps that stable
+// until the first drag re-keys the list.
+function byHiddenOrder(a, b) {
+  if (a.position !== b.position) return a.position < b.position ? -1 : 1
   const byName = (a.content?.name || '').localeCompare(b.content?.name || '')
   if (byName !== 0) return byName
   return a.id < b.id ? -1 : 1
 }
 
-function liveHidden(rows) {
+// Top level of the hidden home screen: hidden rows outside any live hidden
+// folder (a stray folder_id from older data surfaces rather than vanishes)
+function liveHiddenTop(rows) {
+  const hiddenFolders = new Set(
+    rows.items.filter((i) => !i.deleted_at && i.type === 'folder' && isHiddenRow(i)).map((f) => f.id)
+  )
   return rows.items
-    .filter((i) => !i.deleted_at && i.type === 'bookmark' && isHiddenRow(i))
-    .sort(byHiddenPosition)
+    .filter((i) => !i.deleted_at && isHiddenRow(i) && !(i.folder_id && hiddenFolders.has(i.folder_id)))
+    .sort(byHiddenOrder)
+}
+
+// Hidden rows park on a live page row. When that page (or a visible folder
+// holding older hidden data) goes away they move to another page; `detach`
+// also lifts them to the hidden top level. Position is left alone — it is
+// the hidden home screen's order.
+function relocateHidden(hiddenRows, toPageId, now, { detach = false } = {}) {
+  return hiddenRows.map((row) => ({
+    ...row,
+    page_id: toPageId,
+    folder_id: detach ? null : row.folder_id,
+    updated_at: now,
+  }))
 }
 
 const PAGE_CAPACITY = 20
@@ -187,13 +213,18 @@ export function useHomescreen() {
 
   const data = useMemo(() => rowsToNested(visibleRows(rows)), [rows])
 
-  // The hidden home screen's grid, in its own drag order. A hidden row keeps
-  // its page row only as a parking spot — unhiding appends to the next free
-  // slot rather than restoring wherever it used to sit.
-  const hidden = useMemo(
-    () => liveHidden(rows).map((r) => ({ id: r.id, type: 'bookmark', ...r.content })),
-    [rows]
-  )
+  // The hidden home screen, nested like a page: top-level bookmarks and
+  // folders with their contents. Unhiding appends to the next free visible
+  // slot rather than restoring wherever a row used to sit.
+  const hidden = useMemo(() => {
+    const toItem = (r) => ({ ...r.content, id: r.id, type: r.type })
+    const hiddenRows = spaceRows(rows, true)
+    return liveHiddenTop(rows).map((row) =>
+      row.type === 'folder'
+        ? { ...toItem(row), items: liveFolderItems(hiddenRows, row.id).map(toItem) }
+        : toItem(row)
+    )
+  }, [rows])
 
   // ---------- recycle bin ----------
   // Deleting a page or folder tombstones it and its contents with one shared
@@ -401,19 +432,10 @@ export function useHomescreen() {
     })
   }, [currentPage, applyRowChanges])
 
-  // Hidden bookmarks are invisible inside their container, so a user deleting
-  // a folder or page that "looks empty" can't know they're there. Rather than
-  // tombstone them along with the container, park them (still hidden) at the
-  // end of a surviving page's top level so they stay on the Hidden page.
-  const relocateHidden = useCallback((rowsNow, hiddenRows, toPageId, now) => {
-    let cursor = endPosition(liveTopItems(rowsNow, toPageId))
-    return hiddenRows.map((row) => {
-      const moved = { ...row, page_id: toPageId, folder_id: null, position: cursor, updated_at: now }
-      cursor = positionBetween(cursor, '')
-      return moved
-    })
-  }, [])
-
+  // Deleting a folder takes its contents with it (both come back together
+  // from the Recycle Bin). A hidden bookmark parked inside a visible folder
+  // (older data) is invisible there, so the user can't know it's going: it
+  // moves to the hidden top level instead.
   const deleteItem = useCallback((itemId) => {
     const rowsNow = rowsRef.current
     const target = liveItem(rowsNow, itemId)
@@ -422,13 +444,15 @@ export function useHomescreen() {
     const changes = [{ ...target, deleted_at: now, updated_at: now }]
     if (target.type === 'folder') {
       const children = liveFolderItems(rowsNow, itemId)
+      const sameSpace = (row) => isHiddenRow(row) === isHiddenRow(target)
       for (const child of children) {
-        if (!isHiddenRow(child)) changes.push({ ...child, deleted_at: now, updated_at: now })
+        if (sameSpace(child)) changes.push({ ...child, deleted_at: now, updated_at: now })
       }
-      changes.push(...relocateHidden(rowsNow, children.filter(isHiddenRow), target.page_id, now))
+      const strays = children.filter((c) => !sameSpace(c))
+      changes.push(...relocateHidden(strays, target.page_id, now, { detach: true }))
     }
     applyRowChanges({ items: changes })
-  }, [applyRowChanges, relocateHidden])
+  }, [applyRowChanges])
 
   const renameItem = useCallback((itemId, pageId, newName) => {
     const target = liveItem(rowsRef.current, itemId)
@@ -466,6 +490,8 @@ export function useHomescreen() {
     const bookmark = liveItem(rowsNow, bookmarkId)
     const folder = liveItem(rowsNow, folderId)
     if (!bookmark || bookmark.type !== 'bookmark' || !folder || folder.type !== 'folder') return
+    // A folder only ever holds rows from its own space
+    if (isHiddenRow(bookmark) !== isHiddenRow(folder)) return
     applyRowChanges({
       items: [{
         ...bookmark,
@@ -478,7 +504,10 @@ export function useHomescreen() {
   }, [applyRowChanges])
 
   const reorderFolderItems = useCallback((folderId, pageId, oldIndex, newIndex) => {
-    const children = liveFolderItems(visibleRows(rowsRef.current), folderId)
+    const rowsNow = rowsRef.current
+    const folder = liveItem(rowsNow, folderId)
+    if (!folder) return
+    const children = liveFolderItems(folderSpace(rowsNow, folder), folderId)
     const moved = children[oldIndex]
     if (!moved) return
     applyRowChanges({
@@ -494,6 +523,20 @@ export function useHomescreen() {
     const rowsNow = rowsRef.current
     const bookmark = liveItem(rowsNow, bookmarkId)
     if (!bookmark) return
+
+    // Out of a hidden folder means onto the hidden home screen: one page,
+    // no slot cap, nothing to navigate to
+    if (isHiddenRow(bookmark)) {
+      applyRowChanges({
+        items: [{
+          ...bookmark,
+          folder_id: null,
+          position: endPosition(liveHiddenTop(rowsNow)),
+          updated_at: nowIso(),
+        }],
+      })
+      return
+    }
 
     const sourceIdx = livePages(rowsNow).findIndex((p) => p.id === pageId)
     const { pageId: targetPageId, pageIdx: targetIdx, newPage } = nextFreeSlot(rowsNow, sourceIdx)
@@ -538,29 +581,27 @@ export function useHomescreen() {
     if (!page) return
 
     const changes = { pages: [{ ...page, deleted_at: now, updated_at: now }], items: [] }
-    const folderIds = new Set()
-    const hiddenRows = []
-    for (const item of liveTopItems(rowsNow, pageId)) {
-      if (item.type === 'folder') folderIds.add(item.id)
-      if (isHiddenRow(item)) hiddenRows.push(item)
-      else changes.items.push({ ...item, deleted_at: now, updated_at: now })
-    }
+    const tombstone = (row) => changes.items.push({ ...row, deleted_at: now, updated_at: now })
+    // Hidden rows survive on the nearest remaining page (previous, else next)
+    const idx = pages.findIndex((p) => p.id === pageId)
+    const survivor = pages[idx - 1] || pages[idx + 1]
     // Folder children track their folder, not the page they were created
-    // on, so tombstone them through their parent
-    for (const item of rowsNow.items) {
-      if (!item.deleted_at && item.folder_id && folderIds.has(item.folder_id)) {
-        if (isHiddenRow(item)) hiddenRows.push(item)
-        else changes.items.push({ ...item, deleted_at: now, updated_at: now })
+    // on, so they are handled through their parent
+    for (const item of liveTopItems(rowsNow, pageId)) {
+      const children = item.type === 'folder' ? liveFolderItems(rowsNow, item.id) : []
+      if (isHiddenRow(item)) {
+        // A hidden folder moves its parking spot with its contents intact
+        changes.items.push(...relocateHidden([item, ...children], survivor.id, now))
+        continue
+      }
+      tombstone(item)
+      for (const child of children) {
+        if (isHiddenRow(child)) changes.items.push(...relocateHidden([child], survivor.id, now, { detach: true }))
+        else tombstone(child)
       }
     }
-    // Hidden bookmarks survive on the nearest remaining page (previous, else next)
-    if (hiddenRows.length > 0) {
-      const idx = pages.findIndex((p) => p.id === pageId)
-      const survivor = pages[idx - 1] || pages[idx + 1]
-      changes.items.push(...relocateHidden(rowsNow, hiddenRows, survivor.id, now))
-    }
     applyRowChanges(changes)
-  }, [applyRowChanges, relocateHidden])
+  }, [applyRowChanges])
 
   const importData = useCallback(async (file) => {
     const parsed = await importDataUtil(file)
@@ -618,59 +659,84 @@ export function useHomescreen() {
     applyRowChanges({ items: [{ ...target, content, updated_at: nowIso() }] })
   }, [applyRowChanges])
 
-  // A hidden bookmark gives up its spot: it's detached from any folder on the
-  // way out, and unhiding appends it to the first page with a free slot rather
-  // than restoring wherever it used to sit
+  // Hiding moves a row to the end of the hidden home screen, out of any
+  // folder; a folder takes its contents along. Unhiding appends to the first
+  // visible page with a free slot rather than restoring wherever it used to
+  // sit, and a bookmark unhidden out of a hidden folder leaves that folder.
   const setHidden = useCallback((itemId, hiddenFlag) => {
     const rowsNow = rowsRef.current
     const target = liveItem(rowsNow, itemId)
-    if (!target || target.type !== 'bookmark') return
+    if (!target) return
     const now = nowIso()
-    const content = { ...target.content }
+    const children = target.type === 'folder' ? liveFolderItems(rowsNow, itemId) : []
+    const flagged = (row) => {
+      const content = { ...row.content }
+      if (hiddenFlag) content.hidden = true
+      else delete content.hidden
+      return content
+    }
     if (hiddenFlag) {
-      content.hidden = true
-      content.hiddenPosition = endPosition(liveHidden(rowsNow), hiddenPosition)
-      applyRowChanges({ items: [{ ...target, content, folder_id: null, updated_at: now }] })
+      applyRowChanges({
+        items: [
+          {
+            ...target,
+            content: flagged(target),
+            folder_id: null,
+            position: endPosition(liveHiddenTop(rowsNow)),
+            updated_at: now,
+          },
+          ...children.map((c) => ({ ...c, content: flagged(c), updated_at: now })),
+        ],
+      })
       return
     }
-    delete content.hidden
-    delete content.hiddenPosition
     const { pageId, newPage } = nextFreeSlot(rowsNow)
     applyRowChanges({
       pages: newPage ? [newPage] : [],
+      items: [
+        {
+          ...target,
+          content: flagged(target),
+          page_id: pageId,
+          folder_id: null,
+          position: endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
+          updated_at: now,
+        },
+        ...children.map((c) => ({ ...c, content: flagged(c), page_id: pageId, updated_at: now })),
+      ],
+    })
+  }, [applyRowChanges])
+
+  // A new, empty folder on the hidden home screen. It parks on the first
+  // page like any hidden row.
+  const addHiddenFolder = useCallback((name) => {
+    const rowsNow = rowsRef.current
+    const page = livePages(rowsNow)[0]
+    if (!page) return
+    applyRowChanges({
       items: [{
-        ...target,
-        content,
-        page_id: pageId,
-        folder_id: null,
-        position: endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
-        updated_at: now,
+        id: crypto.randomUUID(), page_id: page.id, folder_id: null, type: 'folder',
+        content: { name, hidden: true },
+        position: endPosition(liveHiddenTop(rowsNow)),
+        deleted_at: null, updated_at: nowIso(),
       }],
     })
   }, [applyRowChanges])
 
-  // Drag-reorder on the hidden home screen. Rows from before the order
-  // existed have no key: the first drag keys the whole list in its current
-  // order first, so the move lands exactly where it was dropped.
+  // Drag-reorder on the hidden home screen. Keys inherited from different
+  // pages can collide, so such a list is re-keyed in its current order
+  // first and the move lands exactly where it was dropped.
   const reorderHidden = useCallback((oldIndex, newIndex) => {
     const now = nowIso()
-    let list = liveHidden(rowsRef.current)
+    let list = liveHiddenTop(rowsRef.current)
     if (!list[oldIndex]) return
-    const keyed = list.every(hiddenPosition)
+    const keyed = list.every((row, i) => i === 0 || list[i - 1].position < row.position)
     if (!keyed) {
       const keys = seqPositions(list.length)
-      list = list.map((row, i) => ({
-        ...row,
-        content: { ...row.content, hiddenPosition: keys[i] },
-        updated_at: now,
-      }))
+      list = list.map((row, i) => ({ ...row, position: keys[i], updated_at: now }))
     }
     const moved = list[oldIndex]
-    const movedRow = {
-      ...moved,
-      content: { ...moved.content, hiddenPosition: positionAt(list, newIndex, moved.id, hiddenPosition) },
-      updated_at: now,
-    }
+    const movedRow = { ...moved, position: positionAt(list, newIndex, moved.id), updated_at: now }
     applyRowChanges({
       items: keyed ? [movedRow] : list.map((row) => (row.id === moved.id ? movedRow : row)),
     })
@@ -703,7 +769,11 @@ export function useHomescreen() {
     if (!folder) return
     const now = nowIso()
     const stamp = folder.deleted_at
-    const { pageId, newPage } = nextFreeSlot(rowsNow)
+    // A hidden folder goes back to the end of the hidden home screen instead
+    const toHidden = isHiddenRow(folder)
+    const { pageId, newPage } = toHidden
+      ? { pageId: livePages(rowsNow)[0].id, newPage: null }
+      : nextFreeSlot(rowsNow)
     const children = rowsNow.items
       .filter((c) => c.folder_id === folderId && c.deleted_at === stamp)
       .map((c) => ({ ...c, page_id: pageId, deleted_at: null, updated_at: now }))
@@ -714,7 +784,9 @@ export function useHomescreen() {
           ...folder,
           page_id: pageId,
           folder_id: null,
-          position: endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
+          position: toHidden
+            ? endPosition(liveHiddenTop(rowsNow))
+            : endPosition(liveTopItems(visibleRows(rowsNow), pageId)),
           deleted_at: null,
           updated_at: now,
         },
@@ -776,6 +848,7 @@ export function useHomescreen() {
     hidden,
     setHidden,
     reorderHidden,
+    addHiddenFolder,
     trash,
     restorePage,
     restoreFolder,

@@ -488,17 +488,17 @@ describe('the hidden home screen order', () => {
     expect(hiddenIds(result.current)).toEqual(['a', 'c', 'b'])
 
     const stored = JSON.parse(localStorage.getItem('browserhome_rows'))
-    const keyOf = (id) => stored.items.find((i) => i.id === id).content.hiddenPosition
+    const keyOf = (id) => stored.items.find((i) => i.id === id).position
     expect(keyOf('a') < keyOf('c') && keyOf('c') < keyOf('b')).toBe(true)
   })
 
-  it('bookmarks hidden before the order existed stay alphabetical until the first drag', () => {
+  it('rows hidden on different pages with colliding keys sort by name until the first drag re-keys them', () => {
     const { result } = mount({
-      pages: [page('p1', 'a')],
+      pages: [page('p1', 'a'), page('p2', 'b')],
       items: [
         bm('zeta', 'p1', 'a', { hidden: true }),
-        bm('alpha', 'p1', 'b', { hidden: true }),
-        bm('mid', 'p1', 'c', { hidden: true }),
+        bm('alpha', 'p2', 'a', { hidden: true }),
+        bm('mid', 'p1', 'a', { hidden: true }),
         bm('shown', 'p1', 'd'),
       ],
     })
@@ -507,20 +507,147 @@ describe('the hidden home screen order', () => {
     act(() => result.current.reorderHidden(2, 0))
     expect(hiddenIds(result.current)).toEqual(['zeta', 'alpha', 'mid'])
 
-    // The drag keyed every row, so a later hide appends rather than sorting in
+    // Every row now has its own key, so a later hide appends rather than sorting in
     act(() => result.current.setHidden('shown', true))
     expect(hiddenIds(result.current)).toEqual(['zeta', 'alpha', 'mid', 'shown'])
   })
 
-  it('unhiding forgets the slot, so hiding again appends at the end', () => {
+  it('unhiding re-slots the bookmark, so hiding it again appends at the end', () => {
     const { result } = mount(three())
     act(() => result.current.setHidden('a', true))
     act(() => result.current.setHidden('b', true))
     act(() => result.current.setHidden('a', false))
-    expect(gridIds(result.current).includes('a')).toBe(true)
-    expect(result.current.data.pages[0].items.find((i) => i.id === 'a').hiddenPosition).toBeUndefined()
+    expect(gridIds(result.current)).toEqual(['c', 'a'])
 
     act(() => result.current.setHidden('a', true))
     expect(hiddenIds(result.current)).toEqual(['b', 'a'])
+  })
+})
+
+describe('folders on the hidden home screen', () => {
+  const hiddenIds = (hs) => hs.hidden.map((h) => h.id)
+  const hiddenFolderChildIds = (hs, folderId) =>
+    hs.hidden.find((i) => i.id === folderId)?.items.map((c) => c.id)
+  // One visible bookmark; a hidden folder "Vault" holding two; one loose hidden bookmark
+  const vault = () => ({
+    pages: [page('p1', 'a')],
+    items: [
+      bm('v1', 'p1', 'a'),
+      { ...folder('hf', 'p1', 'b'), content: { name: 'Vault', hidden: true } },
+      bm('h1', 'p1', 'a', { hidden: true }, { folder_id: 'hf' }),
+      bm('h2', 'p1', 'b', { hidden: true }, { folder_id: 'hf' }),
+      bm('h3', 'p1', 'c', { hidden: true }),
+    ],
+  })
+
+  it('lists hidden folders with their contents, and keeps them off the home screen', () => {
+    const { result } = mount(vault())
+    expect(gridIds(result.current)).toEqual(['v1'])
+    expect(hiddenIds(result.current)).toEqual(['hf', 'h3'])
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1', 'h2'])
+  })
+
+  it('addHiddenFolder creates an empty folder at the end of the hidden screen only', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('a', 'p1', 'a'), bm('b', 'p1', 'b')] })
+    act(() => result.current.setHidden('a', true))
+    act(() => result.current.addHiddenFolder('Receipts'))
+    expect(result.current.hidden[1]).toMatchObject({ type: 'folder', name: 'Receipts', items: [] })
+    expect(gridIds(result.current)).toEqual(['b'])
+  })
+
+  it('hiding a folder takes its contents along; unhiding brings them back together', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a')],
+      items: [folder('f1', 'p1', 'a', 'Work'), bm('c1', 'p1', 'a', {}, { folder_id: 'f1' }), bm('b1', 'p1', 'b')],
+    })
+    act(() => result.current.setHidden('f1', true))
+    expect(gridIds(result.current)).toEqual(['b1'])
+    expect(hiddenIds(result.current)).toEqual(['f1'])
+    expect(hiddenFolderChildIds(result.current, 'f1')).toEqual(['c1'])
+
+    act(() => result.current.setHidden('f1', false))
+    expect(gridIds(result.current)).toEqual(['b1', 'f1'])
+    expect(folderChildIds(result.current, 'f1')).toEqual(['c1'])
+    expect(result.current.hidden).toHaveLength(0)
+  })
+
+  it('addToFolder files a hidden bookmark into a hidden folder, never across spaces', () => {
+    const { result } = mount(vault())
+    act(() => result.current.addToFolder('h3', 'hf', null))
+    expect(hiddenIds(result.current)).toEqual(['hf'])
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1', 'h2', 'h3'])
+
+    act(() => result.current.addToFolder('v1', 'hf', null)) // visible into hidden: refused
+    expect(gridIds(result.current)).toEqual(['v1'])
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1', 'h2', 'h3'])
+  })
+
+  it('reorderFolderItems and ejectFromFolder work inside a hidden folder', () => {
+    const { result } = mount(vault())
+    act(() => result.current.reorderFolderItems('hf', null, 0, 1))
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h2', 'h1'])
+
+    // Ejecting lands at the end of the hidden screen, not on a visible page
+    act(() => result.current.ejectFromFolder('h2', 'hf', null))
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1'])
+    expect(hiddenIds(result.current)).toEqual(['hf', 'h3', 'h2'])
+    expect(gridIds(result.current)).toEqual(['v1'])
+    expect(result.current.data.pages).toHaveLength(1)
+  })
+
+  it('unhiding a bookmark out of a hidden folder puts it on the home screen', () => {
+    const { result } = mount(vault())
+    act(() => result.current.setHidden('h1', false))
+    expect(gridIds(result.current)).toEqual(['v1', 'h1'])
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h2'])
+  })
+
+  it('deleting a hidden folder bins it with its contents; restore returns it to the hidden screen', () => {
+    const { result } = mount(vault())
+    act(() => result.current.deleteItem('hf'))
+    expect(hiddenIds(result.current)).toEqual(['h3'])
+    expect(result.current.trash.folders).toMatchObject([{ name: 'Vault', itemCount: 2 }])
+
+    act(() => result.current.restoreFolder('hf'))
+    expect(gridIds(result.current)).toEqual(['v1'])
+    expect(hiddenIds(result.current)).toEqual(['h3', 'hf'])
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1', 'h2'])
+  })
+
+  it('deleting the page a hidden folder parks on keeps the folder and its contents', () => {
+    const { result } = mount({
+      pages: [page('p1', 'a'), page('p2', 'b')],
+      items: [
+        bm('v1', 'p1', 'a'),
+        { ...folder('hf', 'p2', 'a'), content: { name: 'Vault', hidden: true } },
+        bm('h1', 'p2', 'a', { hidden: true }, { folder_id: 'hf' }),
+        bm('v2', 'p2', 'b'),
+      ],
+    })
+    act(() => result.current.deletePage('p2'))
+    expect(result.current.data.pages).toHaveLength(1)
+    expect(hiddenIds(result.current)).toEqual(['hf'])
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1'])
+    expect(result.current.trash.pages[0].itemCount).toBe(1) // v2 only
+  })
+
+  it('a hidden folder survives an export/import round trip', async () => {
+    const { result } = mount(vault())
+    const captured = {}
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => { captured.blob = blob; return 'blob:test' })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    act(() => result.current.exportData())
+    const text = await new Promise((resolve) => {
+      const r = new FileReader()
+      r.onload = (e) => resolve(e.target.result)
+      r.readAsText(captured.blob)
+    })
+
+    const file = new File([text], 'backup.json', { type: 'application/json' })
+    await act(async () => { await result.current.importData(file) })
+    expect(gridIds(result.current)).toEqual(['v1'])
+    expect(hiddenIds(result.current)).toEqual(['hf', 'h3'])
+    expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1', 'h2'])
   })
 })

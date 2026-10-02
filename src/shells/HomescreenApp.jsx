@@ -43,6 +43,7 @@ export default function HomescreenApp() {
     hidden,
     setHidden,
     reorderHidden,
+    addHiddenFolder,
     trash,
     restorePage,
     restoreFolder,
@@ -66,10 +67,15 @@ export default function HomescreenApp() {
         <div className="app-home">
           {view === 'hidden' ? (
             <IncognitoScreen
-              hiddenBookmarks={hidden}
-              visibleBookmarks={flattenBookmarks(data)}
+              hiddenItems={hidden}
+              visibleItems={flattenBookmarks(data, { includeFolders: true })}
               setHidden={setHidden}
               reorderHidden={reorderHidden}
+              addHiddenFolder={addHiddenFolder}
+              addToFolder={addToFolder}
+              removeFromFolder={removeFromFolder}
+              ejectFromFolder={ejectFromFolder}
+              reorderFolderItems={reorderFolderItems}
               deleteItem={deleteItem}
               renameItem={renameItem}
               updateBookmark={updateBookmark}
@@ -149,7 +155,7 @@ export default function HomescreenApp() {
             importData={importData}
             exportData={exportData}
             data={data}
-            hiddenBookmarks={hidden}
+            hiddenItems={hidden}
             trash={trash}
             restorePage={restorePage}
             restoreFolder={restoreFolder}

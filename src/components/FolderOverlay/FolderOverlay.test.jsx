@@ -87,3 +87,21 @@ describe('FolderOverlay', () => {
     expect(h.onDeleteFromFolder).toHaveBeenCalledWith('c1', 'f1')
   })
 })
+
+describe('hidden folders', () => {
+  it('shows "Show on home screen" only when given an unhide handler', async () => {
+    mount()
+    expect(screen.queryByRole('button', { name: /Show on home screen/ })).not.toBeInTheDocument()
+  })
+
+  it('"Show on home screen" calls the unhide handler', async () => {
+    const onUnhide = vi.fn()
+    render(
+      <SettingsProvider>
+        <FolderOverlay folder={folder} editMode={false} appInfoOpen={false} onClose={() => {}} onUnhide={onUnhide} />
+      </SettingsProvider>
+    )
+    await userEvent.click(screen.getByRole('button', { name: /Show on home screen/ }))
+    expect(onUnhide).toHaveBeenCalled()
+  })
+})

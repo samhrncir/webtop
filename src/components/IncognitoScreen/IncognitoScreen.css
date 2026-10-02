@@ -376,3 +376,72 @@
   flex: 1;
   min-height: 40px;
 }
+
+/* ── + menu: tabs and the new-folder form ─────────────────────── */
+.incognito-tabs {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: var(--space-1);
+}
+
+.incognito-tab {
+  flex: 1;
+  padding: var(--space-2) 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+}
+
+.incognito-tab.active {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.incognito-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.incognito-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 40px;
+  width: 100%;
+  color: var(--text-primary);
+  padding: var(--space-2) var(--space-3);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+}
+
+.incognito-input:focus {
+  border-color: var(--accent-border);
+}
+
+.incognito-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ── Folders ─────────────────────────────────────────────────── */
+/* Drop-over highlight (HomeScreen.css carries the desktop grid's; the
+   mobile chunk never loads that file) */
+.incognito-tile.folder-drop-target .folder-icon-preview {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px #e8eaed, 0 0 20px rgba(0, 0, 0, 0.6);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+/* The folder overlay's eject zone tints purple on the home screen */
+.incognito-screen .folder-overlay-backdrop.eject-ready {
+  background: rgba(154, 160, 166, 0.22);
+}

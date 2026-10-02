@@ -7,7 +7,7 @@ import {
   HOME_TAGS_MIN, HOME_TAGS_MAX, clampHomeTagsMax, normalizeHomeTagsMode,
 } from '../../context/SettingsContext.jsx'
 import { supabase } from '../../lib/supabase.js'
-import { flattenBookmarks, allTags } from '../../utils/tags.js'
+import { flattenBookmarks, allTags, countBookmarks } from '../../utils/tags.js'
 import { normalizeChatUrl, resolveAiChat } from '../../utils/aiChat.js'
 import RecycleBin from '../RecycleBin/RecycleBin.jsx'
 import './SettingsPage.css'
@@ -100,8 +100,9 @@ export default function SettingsPage({
   importData,
   exportData,
   data,
-  hiddenBookmarks = [],
-  // Hidden bookmarks have their own home screen rather than a sub-page here
+  // The hidden home screen's items (bookmarks and folders); it is its own
+  // screen rather than a sub-page here
+  hiddenItems = [],
   onOpenHidden,
   trash = { pages: [], folders: [] },
   restorePage,
@@ -436,9 +437,9 @@ export default function SettingsPage({
               <SettingsRow
                 label="Hidden Bookmarks"
                 description={
-                  hiddenBookmarks.length === 0
-                    ? 'Hide bookmarks from the home screen without deleting them'
-                    : `${hiddenBookmarks.length} hidden`
+                  hiddenItems.length === 0
+                    ? 'Hide bookmarks and folders from the home screen without deleting them'
+                    : `${countBookmarks(hiddenItems)} hidden`
                 }
               >
                 <button className="settings-action-btn" onClick={onOpenHidden}>
