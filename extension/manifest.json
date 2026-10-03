@@ -1,8 +1,10 @@
 {
   "manifest_version": 3,
   "name": "BrowserHome Companion",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lets BrowserHome bookmarks open browser-internal pages such as chrome://extensions, which web pages cannot open on their own.",
+  "permissions": ["scripting"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*", "https://browserhome.app/*"],
   "background": {
     "service_worker": "background.js"
   },

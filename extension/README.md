@@ -13,7 +13,7 @@ There is no build step; the folder is the extension.
 
 1. Open `chrome://extensions` and switch on **Developer mode** (top right).
 2. Click **Load unpacked** and pick this `extension/` folder.
-3. Reload the BrowserHome tab.
+3. Any BrowserHome tab already open picks it up immediately; no reload needed.
 
 Works the same in Edge, Brave and other Chromium browsers (open the
 browser's own extensions page in step 1).

@@ -9,5 +9,10 @@ window.addEventListener('message', (event) => {
   if (event.source !== window || event.origin !== window.location.origin) return
   const data = event.data
   if (!data || data.type !== 'browserhome:open-url' || typeof data.url !== 'string') return
-  chrome.runtime.sendMessage({ type: 'open-url', url: data.url })
+  try {
+    chrome.runtime.sendMessage({ type: 'open-url', url: data.url })
+  } catch {
+    // this copy of the script belongs to an extension build that has since
+    // been reloaded; the freshly injected copy handles the message
+  }
 })
