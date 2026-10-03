@@ -12,7 +12,7 @@ import Taskbar from '../components/Taskbar/Taskbar.jsx'
 import PageIndicator from '../components/PageIndicator/PageIndicator.jsx'
 import SettingsPage from '../components/SettingsPage/SettingsPage.jsx'
 import StoreScreen from '../components/Store/StoreScreen.jsx'
-import { useStoreCatalog } from '../hooks/useStore.js'
+import { useStoreCatalog, useStoreAdmin } from '../hooks/useStore.js'
 import { installedHosts, installPayload } from '../utils/store.js'
 import { showNotice } from '../utils/notice.js'
 
@@ -71,6 +71,7 @@ export default function HomescreenApp() {
   const tagNames = useMemo(() => allTags(data).map((t) => t.tag), [data])
 
   const store = useStoreCatalog()
+  const storeAdmin = useStoreAdmin(store)
   const installed = useMemo(() => installedHosts(data, hidden), [data, hidden])
   const handleInstall = (app) => {
     installBookmark(installPayload(app))
@@ -175,6 +176,9 @@ export default function HomescreenApp() {
               onInstall={handleInstall}
               onOpen={openUrl}
               onBack={() => setView('home')}
+              isAdmin={storeAdmin.isAdmin}
+              onSaveListing={storeAdmin.saveApp}
+              onDeleteListing={storeAdmin.deleteApp}
             />
           ) : (
           <SettingsPage

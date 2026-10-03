@@ -214,7 +214,7 @@ export async function fetchIsStoreAdmin() {
 export async function upsertStoreApp(row) {
   const { data, error } = await supabase
     .from('store_apps')
-    .upsert(row, { onConflict: 'slug' })
+    .upsert(row, { onConflict: row.id ? 'id' : 'slug' })
     .select()
     .single()
   return { app: error ? null : data, error }

@@ -20,7 +20,8 @@ const catalog = [
 
 function mount(props = {}) {
   const handlers = {
-    onInstall: vi.fn(), onOpen: vi.fn(), onBack: vi.fn(), onManage: vi.fn(),
+    onInstall: vi.fn(), onOpen: vi.fn(), onBack: vi.fn(),
+    onSaveListing: vi.fn(async () => ({ error: null })), onDeleteListing: vi.fn(async () => ({ error: null })),
   }
   render(
     <StoreScreen
@@ -114,9 +115,12 @@ describe('browsing the store', () => {
     expect(h.onBack).toHaveBeenCalled()
   })
 
-  it('admins get a Manage button', async () => {
-    const h = mount({ isAdmin: true })
+  it('admins get a Manage button that opens the admin pages, drafts and all', async () => {
+    mount({ isAdmin: true })
     await userEvent.click(screen.getByRole('button', { name: 'Manage' }))
-    expect(h.onManage).toHaveBeenCalled()
+    expect(screen.getByRole('heading', { name: 'Manage store' })).toBeInTheDocument()
+    expect(screen.getByText('Secret')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
   })
 })
