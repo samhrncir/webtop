@@ -14,7 +14,7 @@ import AddBookmarkModal from '../components/AddBookmarkModal/AddBookmarkModal.js
 import SettingsPage from '../components/SettingsPage/SettingsPage.jsx'
 import IncognitoScreen from '../components/IncognitoScreen/IncognitoScreen.jsx'
 import StoreScreen from '../components/Store/StoreScreen.jsx'
-import { useStoreCatalog } from '../hooks/useStore.js'
+import { useStoreCatalog, useStoreAdmin } from '../hooks/useStore.js'
 import { installedHosts, installPayload } from '../utils/store.js'
 import { showNotice } from '../utils/notice.js'
 import MobilePagedGrid from './MobilePagedGrid.jsx'
@@ -55,6 +55,7 @@ export default function MobileShell() {
   const tagList = useMemo(() => allTags(data), [data])
 
   const store = useStoreCatalog()
+  const storeAdmin = useStoreAdmin(store)
   const installed = useMemo(() => installedHosts(data, hidden), [data, hidden])
   const handleInstall = useCallback((app) => {
     installBookmark(installPayload(app))
@@ -245,6 +246,9 @@ export default function MobileShell() {
             onInstall={handleInstall}
             onOpen={openUrl}
             onBack={() => setView('home')}
+            isAdmin={storeAdmin.isAdmin}
+            onSaveListing={storeAdmin.saveApp}
+            onDeleteListing={storeAdmin.deleteApp}
           />
         </div>
       ) : view === 'hidden' ? (

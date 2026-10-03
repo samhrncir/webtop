@@ -1,0 +1,226 @@
+/* ── Admin list ──────────────────────────────────────────────── */
+.store-admin-body {
+  padding-left: var(--space-5);
+  padding-right: var(--space-5);
+  gap: var(--space-3);
+}
+
+.store-admin-count {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.store-admin-banner {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 10px;
+  background: rgba(229, 62, 62, 0.15);
+  border: 1px solid rgba(229, 62, 62, 0.4);
+  color: #fc8181;
+  font-size: 13px;
+}
+
+.store-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.store-admin-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.store-admin-row--draft {
+  opacity: 0.6;
+}
+
+.store-admin-row-text {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.store-admin-row-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-admin-row-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.store-admin-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.store-admin-check input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+.store-admin-action {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: var(--space-1-5) var(--space-3);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.store-admin-action:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.store-admin-action--danger:hover {
+  color: #fc8181;
+  border-color: rgba(229, 62, 62, 0.5);
+}
+
+/* ── Form ────────────────────────────────────────────────────── */
+.store-admin-form {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.store-admin-form-main {
+  flex: 1 1 360px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.store-admin-preview {
+  flex: 0 0 200px;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.store-admin-preview-card .store-card {
+  width: 170px;
+}
+
+.store-admin-url-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.store-admin-url-row .store-admin-field {
+  flex: 1;
+}
+
+.store-admin-url-row .store-admin-action {
+  margin-bottom: 1px;
+}
+
+.store-admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.store-admin-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.store-admin-input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  resize: vertical;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.store-admin-input:focus {
+  border-color: var(--accent-border);
+  background: var(--surface-hover);
+}
+
+.store-admin-input.error {
+  border-color: rgba(229, 62, 62, 0.7);
+}
+
+.store-admin-error {
+  font-size: 12px;
+  color: #fc8181;
+}
+
+.store-admin-hint {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.store-admin-checks {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.store-admin-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.store-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 700px) {
+  .store-admin-form {
+    flex-direction: column-reverse;
+  }
+
+  .store-admin-preview {
+    position: static;
+    flex-basis: auto;
+  }
+}
