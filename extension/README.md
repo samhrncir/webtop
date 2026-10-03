@@ -37,3 +37,14 @@ production site. Hosting it elsewhere too? Add that origin and reload the extens
 - `background.js` opens the URL with `chrome.tabs.create`, but only for
   browser-internal schemes; ordinary links never go through the extension.
 - The app side lives in `src/utils/openUrl.js`.
+
+## Icons
+
+`icons/` holds the site logo (`assets/logo.svg`) rendered to PNG at the
+sizes Chrome wants. After changing the logo, re-render with sharp:
+
+```js
+import sharp from 'sharp'
+for (const s of [16, 32, 48, 128])
+  await sharp('assets/logo.svg', { density: 288 }).resize(s, s).png().toFile(`extension/icons/icon-${s}.png`)
+```
