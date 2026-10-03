@@ -115,3 +115,87 @@ $$;
 -- Live cross-session sync (postgres_changes respects RLS)
 alter publication supabase_realtime add table pages;
 alter publication supabase_realtime add table items;
+
+-- ============================================================
+-- Store: a shared catalog of popular sites that any user can install
+-- as a bookmark. Listings are global (one catalog for everyone), so
+-- unlike pages/items they are not keyed by user. Only members of
+-- store_admins may write them; everyone signed in may read published
+-- ones. The client builds the bookmark from the listing's name, url,
+-- tags and icon_url, then merges `install` (extra bookmark fields such
+-- as aliases or subUrls) over that — see src/utils/store.js.
+-- ============================================================
+
+create table if not exists store_admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table store_admins enable row level security;
+
+-- A user may see their own membership (the client uses this to show the
+-- admin pages); nobody writes this table from the client.
+create policy "store_admins_see_self" on store_admins
+  for select using (auth.uid() = user_id);
+
+-- Security definer so the policies below can consult store_admins without
+-- being subject to its own RLS.
+create or replace function is_store_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from store_admins where user_id = auth.uid());
+$$;
+
+create table if not exists store_apps (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null,
+  url text not null,
+  tagline text not null default '',
+  description text not null default '',
+  category text not null default 'Other',
+  tags text[] not null default '{}',
+  icon_url text,
+  featured boolean not null default false,
+  rank integer not null default 0,
+  published boolean not null default true,
+  install jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists store_apps_category_idx on store_apps (category, rank);
+
+alter table store_apps enable row level security;
+
+create policy "store_apps_read_published" on store_apps
+  for select to authenticated
+  using (published or is_store_admin());
+
+create policy "store_apps_admin_write" on store_apps
+  for all to authenticated
+  using (is_store_admin())
+  with check (is_store_admin());
+
+create or replace function store_apps_touch()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists store_apps_touch on store_apps;
+create trigger store_apps_touch
+  before update on store_apps
+  for each row execute function store_apps_touch();
+
+-- Make yourself an admin (run once in the SQL editor):
+--   insert into store_admins (user_id)
+--   select id from auth.users where email = 'you@example.com';
