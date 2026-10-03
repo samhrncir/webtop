@@ -17,6 +17,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { getInitialLetter, getColorForName, isSafeIconUrl, normalizeEmoji, normalizeIconBg, iconBgStyle } from '../../utils/favicon.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { resolveSubUrl } from '../../utils/url.js'
+import { interceptInternalLink } from '../../utils/openUrl.js'
 import { normalizeAliases } from '../../utils/aliases.js'
 import { getTags, normalizeTagList } from '../../utils/tags.js'
 import TagInput from '../TagInput/TagInput.jsx'
@@ -55,6 +56,7 @@ function SortableSubUrl({ sub, baseUrl, editMode, onSetDefault, onDelete }) {
       <a
         className="app-info-suburl-info"
         href={resolvedUrl}
+        onClick={(e) => interceptInternalLink(e, resolvedUrl)}
         target="_blank"
         rel="noopener noreferrer"
         title={resolvedUrl}
@@ -372,6 +374,7 @@ export default function AppInfoModal({ item, onClose, onSave, onDelete, onToggle
                   <a
                     className="app-info-display-url"
                     href={url}
+                    onClick={(e) => interceptInternalLink(e, url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     title={url}

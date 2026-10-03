@@ -114,3 +114,31 @@ body {
   background: var(--accent-border);
   border-radius: 3px;
 }
+
+/* Transient status line (src/utils/notice.js) */
+.app-notice {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--safe-area-inset-top, 0px) + 72px);
+  transform: translateX(-50%);
+  z-index: 10000;
+  max-width: min(92vw, 520px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border-focus);
+  color: var(--text-primary);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+  animation: app-notice-in 160ms ease-out;
+}
+
+@keyframes app-notice-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

@@ -271,3 +271,20 @@ describe('on the hidden bookmarks home screen', () => {
     expect(h.onUnhide).toHaveBeenCalled()
   })
 })
+
+describe('a bookmark pointing at a browser-internal page', () => {
+  it('routes its URL link through the companion extension instead of the anchor', async () => {
+    document.documentElement.dataset.browserhomeCompanion = '1'
+    vi.spyOn(window, 'postMessage').mockImplementation(() => {})
+    try {
+      mount({ url: 'chrome://extensions/' })
+      await userEvent.click(screen.getByRole('link', { name: 'chrome://extensions/' }))
+      expect(window.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ url: 'chrome://extensions/' }),
+        window.location.origin
+      )
+    } finally {
+      delete document.documentElement.dataset.browserhomeCompanion
+    }
+  })
+})

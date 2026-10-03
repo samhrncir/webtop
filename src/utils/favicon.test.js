@@ -105,3 +105,10 @@ describe('letter avatars', () => {
     expect(getColorForName('GitHub')).toMatch(/^#[0-9a-f]{6}$/i)
   })
 })
+
+describe('getFaviconUrl for browser-internal pages', () => {
+  it('asks for no favicon, since chrome://extensions has no web host', () => {
+    expect(getFaviconUrl('chrome://extensions/')).toBeNull()
+    expect(getFaviconUrl('about:blank')).toBeNull()
+  })
+})

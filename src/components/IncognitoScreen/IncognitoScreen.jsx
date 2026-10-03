@@ -18,6 +18,7 @@ import AppInfoModal from '../AppInfoModal/AppInfoModal.jsx'
 import { useSettings, clampGridColumns } from '../../context/SettingsContext.jsx'
 import { useDndZoom } from '../../utils/dndZoom.js'
 import { countBookmarks } from '../../utils/tags.js'
+import { openUrl } from '../../utils/openUrl.js'
 import './IncognitoScreen.css'
 
 // The hidden bookmarks' own home screen: everything hidden from the main
@@ -27,7 +28,6 @@ import './IncognitoScreen.css'
 // of the home view. It owns its edit mode, the + menu (hide something, or
 // make a folder), the folder overlay and the App Info panel.
 
-const openUrl = (url) => window.open(url, '_blank', 'noopener,noreferrer')
 
 // Hat and glasses, the incognito mark
 export function IncognitoIcon({ size = 28 }) {

@@ -1,4 +1,5 @@
 import { gutterWheelHandler } from '../../utils/gutterScroll.js'
+import { openUrl } from '../../utils/openUrl.js'
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import {
   DndContext,
@@ -519,7 +520,7 @@ export default function HomeScreen({
                   editMode={editMode}
                   onDelete={handleDeleteItem}
                   onRename={handleRenameItem}
-                  onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+                  onOpen={openUrl}
                   onInfoOpen={() => handleOpenAppInfo(item)}
                 />
               </div>
@@ -547,7 +548,7 @@ export default function HomeScreen({
                           editMode={editMode}
                           onDelete={handleDeleteItem}
                           onRename={handleRenameItem}
-                          onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+                          onOpen={openUrl}
                           onInfoOpen={() => handleOpenAppInfo(item)}
                         />
                       ) : (
@@ -617,7 +618,7 @@ export default function HomeScreen({
           folder={activeFolder}
           editMode={editMode}
           onClose={() => setActiveFolder(null)}
-          onOpenBookmark={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+          onOpenBookmark={openUrl}
           onOpenAppInfo={handleOpenAppInfo}
           onDeleteFromFolder={handleDeleteFromFolder}
           onRenameFolder={handleRenameFolder}
