@@ -169,3 +169,17 @@ how to add the deployed origin). Without the extension the app copies the
 URL to the clipboard and shows a hint. Keep the scheme allow-lists in
 `openUrl.js` and `extension/background.js` in sync. All bookmark opens go
 through `openUrl`, never a bare `window.open`.
+
+## Store
+
+A Play-style catalog of popular sites (`store_apps` in Supabase, shared by
+every user, read-only unless your user id is in `store_admins`). The UI is
+`src/components/Store/` (storefront, listing page, admin pages) hosted by
+both shells under the `'store'` view; `src/utils/store.js` holds every
+pure rule (what counts as installed, the install payload, filtering and
+grouping, admin draft normalization and validation) and the Supabase
+calls; `src/hooks/useStore.js` caches the catalog in localStorage so it
+shows offline. Installing goes through `useHomescreen.installBookmark`.
+`supabase/seed/store_apps.json` is the listing format; `scripts/
+seed-store.mjs` loads it (`--sql` prints a statement for the SQL editor).
+A future listing-writing agent emits that same JSON and runs that script.

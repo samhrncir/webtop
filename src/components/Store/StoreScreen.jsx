@@ -2,12 +2,14 @@ import React, { useState, useMemo, useCallback } from 'react'
 import { filterApps, groupByCategory, featuredApps, categoriesOf, isInstalled } from '../../utils/store.js'
 import StoreCard from './StoreCard.jsx'
 import StoreDetail from './StoreDetail.jsx'
+import StoreAdmin from './StoreAdmin.jsx'
 import './Store.css'
 
 // The storefront: search, category chips, a Featured row and one row per
 // category, Play-style. Searching or picking a chip flattens the view into
 // a grid of matches. Pure presentation: the catalog, what's installed and
 // the install action all come in as props so both shells can host it.
+// Admins get a Manage button that swaps in the admin pages (StoreAdmin).
 export default function StoreScreen({
   apps,
   status = 'ready',
@@ -16,11 +18,13 @@ export default function StoreScreen({
   onOpen,
   onBack,
   isAdmin = false,
-  onManage,
+  onSaveListing,
+  onDeleteListing,
 }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [managing, setManaging] = useState(false)
 
   const published = useMemo(() => filterApps(apps), [apps])
   const categories = useMemo(() => categoriesOf(published), [published])
@@ -47,6 +51,17 @@ export default function StoreScreen({
         : 'The store is empty.'
     : null
 
+  if (isAdmin && managing) {
+    return (
+      <StoreAdmin
+        apps={apps}
+        onSave={onSaveListing}
+        onDelete={onDeleteListing}
+        onBack={() => setManaging(false)}
+      />
+    )
+  }
+
   return (
     <div className="store-page">
       <div className="store-header">
@@ -63,7 +78,7 @@ export default function StoreScreen({
           spellCheck={false}
         />
         {isAdmin && (
-          <button type="button" className="store-manage" onClick={onManage}>
+          <button type="button" className="store-manage" onClick={() => setManaging(true)}>
             Manage
           </button>
         )}
