@@ -4,6 +4,7 @@ export function getFaviconUrl(url) {
   try {
     const parsed = new URL(url)
     const domain = parsed.hostname
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`
   } catch {
     return null

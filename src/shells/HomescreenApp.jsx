@@ -4,6 +4,7 @@ import { flattenBookmarks, allTags } from '../utils/tags.js'
 import { useSettings } from '../context/SettingsContext.jsx'
 import { uiScaleStyle } from '../utils/uiScale.js'
 import { resolveAiChat } from '../utils/aiChat.js'
+import { openUrl } from '../utils/openUrl.js'
 import SearchBar from '../components/SearchBar/SearchBar.jsx'
 import HomeScreen from '../components/HomeScreen/HomeScreen.jsx'
 import IncognitoScreen from '../components/IncognitoScreen/IncognitoScreen.jsx'
@@ -128,7 +129,7 @@ export default function HomescreenApp() {
                 />
                 <Taskbar
                   pinned={pinned}
-                  onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+                  onOpen={openUrl}
                   onUnpin={togglePin}
                   onReorder={reorderPinned}
                 />

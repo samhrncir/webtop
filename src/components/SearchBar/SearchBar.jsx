@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { getInitialLetter, getColorForName } from '../../utils/favicon.js'
+import { openUrl } from '../../utils/openUrl.js'
 import { useIconSource } from '../../hooks/useIconSource.js'
 import { matchAlias } from '../../utils/aliases.js'
 import { allTags, flattenBookmarks, getTags, itemMatchesQuery, itemMatchesFilter, FAVORITES_FILTER } from '../../utils/tags.js'
@@ -88,7 +89,7 @@ export default function SearchBar({ data, onNavigateToPage, onOpenFolder, onSele
       onNavigateToPage?.(result.pageIdx)
       onOpenFolder?.(result.item, result.pageIdx)
     } else {
-      window.open(result.item.url, '_blank', 'noopener,noreferrer')
+      openUrl(result.item.url)
       onNavigateToPage?.(result.pageIdx)
     }
     setQuery('')

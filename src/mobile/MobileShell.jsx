@@ -15,6 +15,7 @@ import SettingsPage from '../components/SettingsPage/SettingsPage.jsx'
 import IncognitoScreen from '../components/IncognitoScreen/IncognitoScreen.jsx'
 import MobilePagedGrid from './MobilePagedGrid.jsx'
 import MobileBottomBar from './MobileBottomBar.jsx'
+import { openUrl } from '../utils/openUrl.js'
 import './mobile.css'
 
 // Touch-first shell for the Android app and coarse-pointer browsers.
@@ -25,7 +26,6 @@ import './mobile.css'
 // Settings and the hidden bookmarks' incognito home screen each take over
 // the whole screen.
 
-const openUrl = (url) => window.open(url, '_blank', 'noopener,noreferrer')
 
 export default function MobileShell() {
   // 'home' | 'hidden' | 'settings'

@@ -1,14 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { isOpenableUrl, hasScheme } from '../../utils/openUrl.js'
 import './AddBookmarkModal.css'
-
-function isValidUrl(str) {
-  try {
-    const url = new URL(str)
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
-}
 
 function guessNameFromUrl(url) {
   try {
@@ -61,13 +53,13 @@ export default function AddBookmarkModal({ onClose, onAddBookmark, onAddFolder }
     e.preventDefault()
     let valid = true
 
-    // Try prefixing https:// if missing
+    // Try prefixing https:// if there is no scheme (chrome://, about: stay as typed)
     let finalUrl = url.trim()
-    if (finalUrl && !finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+    if (finalUrl && !hasScheme(finalUrl)) {
       finalUrl = 'https://' + finalUrl
     }
 
-    if (!isValidUrl(finalUrl)) {
+    if (!isOpenableUrl(finalUrl)) {
       setUrlError('Please enter a valid URL (e.g. https://example.com)')
       valid = false
     }

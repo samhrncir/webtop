@@ -157,3 +157,15 @@ cd android; $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'; .\grad
   sheet (@capacitor/filesystem + @capacitor/share; WebViews ignore anchor
   downloads); the web build keeps the plain download. Import accepts
   blank/octet-stream MIME types because Android pickers mislabel JSON.
+
+## Chrome companion extension
+
+Browsers refuse to let a web page open their internal pages
+(`chrome://extensions`, `edge://settings`, `about:blank`). Bookmarks may
+still point at them: `src/utils/openUrl.js` routes every bookmark open and,
+for an internal URL, hands it to the companion extension in `extension/`
+(load it unpacked from `chrome://extensions`; its README has the steps and
+how to add the deployed origin). Without the extension the app copies the
+URL to the clipboard and shows a hint. Keep the scheme allow-lists in
+`openUrl.js` and `extension/background.js` in sync. All bookmark opens go
+through `openUrl`, never a bare `window.open`.
