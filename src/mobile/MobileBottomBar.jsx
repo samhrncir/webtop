@@ -11,6 +11,7 @@ export default function MobileBottomBar({
   onNavigateToPage,
   onOpenFolder,
   onOpenSettings,
+  onOpenStore,
   aiChat,
 }) {
   return (
@@ -22,6 +23,16 @@ export default function MobileBottomBar({
       >
         ⚙️
       </button>
+      {onOpenStore && (
+        <button
+          className="mobile-bottombar-btn"
+          onClick={onOpenStore}
+          aria-label="Store"
+          title="Store"
+        >
+          🛍️
+        </button>
+      )}
       <div className="mobile-bottombar-search">
         <SearchBar
           data={data}

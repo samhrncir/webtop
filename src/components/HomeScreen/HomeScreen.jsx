@@ -83,6 +83,7 @@ export default function HomeScreen({
   reorderFolderItems,
   addPage,
   onOpenSettings,
+  onOpenStore,
   onOpenHidden,
   aiChat,
   folderToOpen,
@@ -441,6 +442,13 @@ export default function HomeScreen({
           </button>
           <button
             className="homescreen-toolbar-btn"
+            onClick={onOpenStore}
+            title="Store: popular sites to add"
+          >
+            🛍️ Store
+          </button>
+          <button
+            className="homescreen-toolbar-btn"
             onClick={onOpenHidden}
             title="Hidden bookmarks"
             aria-label="Hidden bookmarks"
@@ -609,6 +617,7 @@ export default function HomeScreen({
           onClose={() => setShowAddModal(false)}
           onAddBookmark={handleAddBookmark}
           onAddFolder={addFolder}
+          onOpenStore={onOpenStore && (() => { setShowAddModal(false); onOpenStore() })}
         />
       )}
 

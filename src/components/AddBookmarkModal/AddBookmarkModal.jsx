@@ -14,7 +14,7 @@ function guessNameFromUrl(url) {
   }
 }
 
-export default function AddBookmarkModal({ onClose, onAddBookmark, onAddFolder }) {
+export default function AddBookmarkModal({ onClose, onAddBookmark, onAddFolder, onOpenStore }) {
   const [tab, setTab] = useState('bookmark') // 'bookmark' | 'folder'
   const [url, setUrl] = useState('')
   const [name, setName] = useState('')
@@ -139,6 +139,11 @@ export default function AddBookmarkModal({ onClose, onAddBookmark, onAddFolder }
             <button className="add-modal-submit" type="submit">
               Add Bookmark
             </button>
+            {onOpenStore && (
+              <button type="button" className="add-modal-store-link" onClick={onOpenStore}>
+                Or pick a popular site from the Store ›
+              </button>
+            )}
           </form>
         ) : (
           <form onSubmit={handleSubmitFolder} className="add-modal-form">

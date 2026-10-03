@@ -30,10 +30,10 @@ export default defineConfig({
       // When your tests raise coverage, raise the floor to the nearest half
       // point below the new value; the floors only ever go up.
       thresholds: {
-        statements: 65.5,
-        branches: 60.5,
-        functions: 60.5,
-        lines: 69,
+        statements: 71.5,
+        branches: 66.5,
+        functions: 67,
+        lines: 75.5,
       },
     },
   },

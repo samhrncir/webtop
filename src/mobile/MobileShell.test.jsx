@@ -292,3 +292,36 @@ describe('folders on the hidden bookmarks home screen', () => {
     expect(screen.getByText('inside')).toBeInTheDocument()
   })
 })
+
+describe('the store on mobile', () => {
+  const listing = {
+    id: 'id-yt', slug: 'youtube', name: 'YouTube', url: 'https://www.youtube.com/',
+    tagline: 'Videos', description: '', category: 'Video', tags: ['video'],
+    icon_url: null, featured: true, rank: 1, published: true, install: {},
+  }
+
+  function mountWithStore(rows) {
+    // The catalog comes from the offline cache: the stub's fetch fails
+    localStorage.setItem('browserhome_store', JSON.stringify([listing]))
+    return mount(rows)
+  }
+
+  it('opens from the bottom bar and installs a site onto the home screen', async () => {
+    mountWithStore({ pages: [page('p1', 'a')], items: [bm('alpha', 'p1', 'a')] })
+    await userEvent.click(screen.getByRole('button', { name: 'Store' }))
+    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Install YouTube' })[0])
+    // Installed at once: every card for it now offers Open
+    expect(screen.queryByRole('button', { name: 'Install YouTube' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Open YouTube' }).length).toBeGreaterThan(0)
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByText('YouTube')).toBeInTheDocument()
+  })
+
+  it('is reachable from Settings too', async () => {
+    mountWithStore({ pages: [page('p1', 'a')], items: [] })
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+    await userEvent.click(screen.getByRole('button', { name: '🛍️ Browse ›' }))
+    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
+  })
+})
