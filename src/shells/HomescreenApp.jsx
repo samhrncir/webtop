@@ -11,13 +11,21 @@ import IncognitoScreen from '../components/IncognitoScreen/IncognitoScreen.jsx'
 import Taskbar from '../components/Taskbar/Taskbar.jsx'
 import PageIndicator from '../components/PageIndicator/PageIndicator.jsx'
 import SettingsPage from '../components/SettingsPage/SettingsPage.jsx'
+import StoreScreen from '../components/Store/StoreScreen.jsx'
+import { useStoreCatalog } from '../hooks/useStore.js'
+import { installedHosts, installPayload } from '../utils/store.js'
+import { showNotice } from '../utils/notice.js'
 
 // The screen composition both shells currently share. As src/mobile grows its
 // own screens, MobileShell stops rendering this and DesktopShell keeps it.
 export default function HomescreenApp() {
   // 'home', 'hidden' (the hidden bookmarks' incognito home screen, shown in
-  // the home pane) or 'settings' (slides in from the right)
+  // the home pane), or 'settings' / 'store' (the right pane slides in)
   const [view, setView] = useState('home')
+  // What the right pane holds; kept while it slides back out so the page
+  // doesn't swap mid-animation
+  const [pane, setPane] = useState('settings')
+  const openPane = (name) => { setPane(name); setView(name) }
   const [folderToOpen, setFolderToOpen] = useState(null)
   // One tag at a time, shared so the chips scope both the grid and search
   const [activeTag, setActiveTag] = useState(null)
@@ -32,6 +40,7 @@ export default function HomescreenApp() {
     editMode,
     toggleEditMode,
     addBookmark,
+    installBookmark,
     addFolder,
     deleteItem,
     renameItem,
@@ -61,9 +70,16 @@ export default function HomescreenApp() {
   const aiChat = resolveAiChat(settings, data)
   const tagNames = useMemo(() => allTags(data).map((t) => t.tag), [data])
 
+  const store = useStoreCatalog()
+  const installed = useMemo(() => installedHosts(data, hidden), [data, hidden])
+  const handleInstall = (app) => {
+    installBookmark(installPayload(app))
+    showNotice(`Added ${app.name} to your home screen`)
+  }
+
   return (
     <div className="app" style={uiScaleStyle(settings.uiScale)}>
-      <div className={`app-view${view === 'settings' ? ' app-view--settings' : ''}`}>
+      <div className={`app-view${view === pane ? ' app-view--settings' : ''}`}>
 
         <div className="app-home">
           {view === 'hidden' ? (
@@ -119,7 +135,8 @@ export default function HomescreenApp() {
                   ejectFromFolder={ejectFromFolder}
                   reorderFolderItems={reorderFolderItems}
                   addPage={addPage}
-                  onOpenSettings={() => setView('settings')}
+                  onOpenSettings={() => openPane('settings')}
+                  onOpenStore={() => openPane('store')}
                   onOpenHidden={() => setView('hidden')}
                   aiChat={aiChat}
                   folderToOpen={folderToOpen}
@@ -150,9 +167,20 @@ export default function HomescreenApp() {
         </div>
 
         <div className="app-settings">
+          {pane === 'store' ? (
+            <StoreScreen
+              apps={store.apps}
+              status={store.status}
+              installedHosts={installed}
+              onInstall={handleInstall}
+              onOpen={openUrl}
+              onBack={() => setView('home')}
+            />
+          ) : (
           <SettingsPage
             onBack={() => setView('home')}
             onOpenHidden={() => setView('hidden')}
+            onOpenStore={() => openPane('store')}
             importData={importData}
             exportData={exportData}
             data={data}
@@ -161,6 +189,7 @@ export default function HomescreenApp() {
             restorePage={restorePage}
             restoreFolder={restoreFolder}
           />
+          )}
         </div>
 
       </div>

@@ -651,3 +651,21 @@ describe('folders on the hidden home screen', () => {
     expect(hiddenFolderChildIds(result.current, 'hf')).toEqual(['h1', 'h2'])
   })
 })
+
+describe('installing from the store', () => {
+  it('writes the whole payload as the bookmark content on the current page', () => {
+    const { result } = mount({ pages: [page('p1', 'a')], items: [bm('b1', 'p1', 'a')] })
+    act(() => result.current.installBookmark({ name: 'YouTube', url: 'https://www.youtube.com/', tags: ['video'], icon: 'https://i.test/yt.png', aliases: ['yt'] }))
+    const added = result.current.data.pages[0].items[1]
+    expect(added).toMatchObject({ type: 'bookmark', name: 'YouTube', url: 'https://www.youtube.com/', tags: ['video'], icon: 'https://i.test/yt.png', aliases: ['yt'] })
+    expect(gridIds(result.current)).toEqual(['b1', added.id])
+  })
+
+  it('overflows to a new page when the current one is full, and never drops tags', () => {
+    const filler = Array.from({ length: 20 }, (_, i) => bm(`b${i}`, 'p1', `a${String(i).padStart(2, '0')}`))
+    const { result } = mount({ pages: [page('p1', 'a')], items: filler })
+    act(() => result.current.installBookmark({ name: 'GitHub', url: 'https://github.com/' }))
+    expect(result.current.data.pages).toHaveLength(2)
+    expect(result.current.data.pages[1].items[0]).toMatchObject({ name: 'GitHub', tags: [] })
+  })
+})

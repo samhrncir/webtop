@@ -13,6 +13,10 @@ import AppInfoModal from '../components/AppInfoModal/AppInfoModal.jsx'
 import AddBookmarkModal from '../components/AddBookmarkModal/AddBookmarkModal.jsx'
 import SettingsPage from '../components/SettingsPage/SettingsPage.jsx'
 import IncognitoScreen from '../components/IncognitoScreen/IncognitoScreen.jsx'
+import StoreScreen from '../components/Store/StoreScreen.jsx'
+import { useStoreCatalog } from '../hooks/useStore.js'
+import { installedHosts, installPayload } from '../utils/store.js'
+import { showNotice } from '../utils/notice.js'
 import MobilePagedGrid from './MobilePagedGrid.jsx'
 import MobileBottomBar from './MobileBottomBar.jsx'
 import { openUrl } from '../utils/openUrl.js'
@@ -28,7 +32,7 @@ import './mobile.css'
 
 
 export default function MobileShell() {
-  // 'home' | 'hidden' | 'settings'
+  // 'home' | 'hidden' | 'settings' | 'store'
   const [view, setView] = useState('home')
   const [activeTag, setActiveTag] = useState(null)
   const [activeFolder, setActiveFolder] = useState(null)
@@ -39,7 +43,7 @@ export default function MobileShell() {
   const {
     data, currentPage, setCurrentPage,
     editMode, toggleEditMode,
-    addBookmark, addFolder, deleteItem, renameItem, updateBookmark,
+    addBookmark, installBookmark, addFolder, deleteItem, renameItem, updateBookmark,
     pinned, togglePin, reorderPinned, toggleFavorite, toggleAccount,
     hidden, setHidden, reorderHidden, addHiddenFolder, trash, restorePage, restoreFolder,
     addToFolder,
@@ -49,6 +53,13 @@ export default function MobileShell() {
 
   const aiChat = resolveAiChat(settings, data)
   const tagList = useMemo(() => allTags(data), [data])
+
+  const store = useStoreCatalog()
+  const installed = useMemo(() => installedHosts(data, hidden), [data, hidden])
+  const handleInstall = useCallback((app) => {
+    installBookmark(installPayload(app))
+    showNotice(`Added ${app.name} to your home screen`)
+  }, [installBookmark])
   const favoritesCount = useMemo(
     () => flattenBookmarks(data).filter(({ item }) => isFavorite(item)).length,
     [data]
@@ -180,6 +191,7 @@ export default function MobileShell() {
             onNavigateToPage={setCurrentPage}
             onOpenFolder={(folder, pageIdx) => { setCurrentPage(pageIdx); setActiveFolder(folder) }}
             onOpenSettings={() => setView('settings')}
+            onOpenStore={() => setView('store')}
             aiChat={aiChat}
           />
 
@@ -220,9 +232,21 @@ export default function MobileShell() {
               onAddBookmark={(url, name) =>
                 addBookmark(url, name, activeTag && activeTag !== FAVORITES_FILTER ? [activeTag] : [])}
               onAddFolder={addFolder}
+              onOpenStore={() => { setShowAdd(false); setView('store') }}
             />
           )}
         </>
+      ) : view === 'store' ? (
+        <div className="mobile-store">
+          <StoreScreen
+            apps={store.apps}
+            status={store.status}
+            installedHosts={installed}
+            onInstall={handleInstall}
+            onOpen={openUrl}
+            onBack={() => setView('home')}
+          />
+        </div>
       ) : view === 'hidden' ? (
         <div className="mobile-incognito">
           <IncognitoScreen
@@ -251,6 +275,7 @@ export default function MobileShell() {
           <SettingsPage
             onBack={() => setView('home')}
             onOpenHidden={() => setView('hidden')}
+            onOpenStore={() => setView('store')}
             importData={importData}
             exportData={exportData}
             data={data}

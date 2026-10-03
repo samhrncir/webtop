@@ -419,6 +419,24 @@ export function useHomescreen() {
     })
   }, [currentPage, applyRowChanges])
 
+  // Store installs arrive with their whole bookmark content ready (name,
+  // url, tags, icon, anything the listing's install payload adds). They land
+  // on the first page from the current one with a free slot, overflowing to
+  // a new page rather than failing, since the user is not looking at the grid.
+  const installBookmark = useCallback((content) => {
+    const rowsNow = rowsRef.current
+    const { pageId, newPage } = nextFreeSlot(rowsNow, currentPage)
+    applyRowChanges({
+      pages: newPage ? [newPage] : [],
+      items: [{
+        id: crypto.randomUUID(), page_id: pageId, folder_id: null, type: 'bookmark',
+        content: { ...content, tags: content.tags ?? [] },
+        position: endPosition(liveTopItems(rowsNow, pageId)),
+        deleted_at: null, updated_at: nowIso(),
+      }],
+    })
+  }, [currentPage, applyRowChanges])
+
   const addFolder = useCallback((name) => {
     const page = livePages(rowsRef.current)[currentPage]
     if (!page) return
@@ -857,6 +875,7 @@ export function useHomescreen() {
     editMode,
     toggleEditMode,
     addBookmark,
+    installBookmark,
     addFolder,
     deleteItem,
     renameItem,
