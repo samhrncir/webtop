@@ -21,11 +21,11 @@ browser's own extensions page in step 1).
 ## Letting it see your deployed site
 
 `manifest.json` lists the origins the content script may run on. It ships
-with the dev server (`http://localhost/*`, any port) and `127.0.0.1`. Add
-the origin you host BrowserHome on, then reload the extension:
+with the dev server (`http://localhost/*`, any port), `127.0.0.1` and the
+production site. Hosting it elsewhere too? Add that origin and reload the extension:
 
 ```json
-"matches": ["http://localhost/*", "http://127.0.0.1/*", "https://home.example.com/*"]
+"matches": ["http://localhost/*", "http://127.0.0.1/*", "https://browserhome.app/*"]
 ```
 
 ## How it works
