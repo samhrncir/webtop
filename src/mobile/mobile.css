@@ -282,12 +282,18 @@
   --dot: 10px;
 }
 
-/* ── Settings as a full-screen page ─────────────────────────── */
-.mobile-settings {
+/* ── Settings and the Store as full-screen pages ────────────── */
+.mobile-settings,
+.mobile-store {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.mobile-store .store-page {
+  flex: 1;
+  min-height: 0;
 }
 
 .mobile-settings .settings-page {

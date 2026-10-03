@@ -161,3 +161,18 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.add-modal-store-link {
+  background: none;
+  border: none;
+  padding: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.add-modal-store-link:hover {
+  color: var(--accent);
+}

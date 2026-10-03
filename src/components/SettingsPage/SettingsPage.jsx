@@ -104,6 +104,7 @@ export default function SettingsPage({
   // screen rather than a sub-page here
   hiddenItems = [],
   onOpenHidden,
+  onOpenStore,
   trash = { pages: [], folders: [] },
   restorePage,
   restoreFolder,
@@ -434,6 +435,19 @@ export default function SettingsPage({
           <section className="settings-section">
             <h2 className="settings-section-title">Bookmarks</h2>
             <div className="settings-card">
+              {onOpenStore && (
+                <>
+                  <SettingsRow
+                    label="Store"
+                    description="Popular sites, ready to add to your home screen"
+                  >
+                    <button className="settings-action-btn" onClick={onOpenStore}>
+                      🛍️ Browse ›
+                    </button>
+                  </SettingsRow>
+                  <div className="settings-divider" />
+                </>
+              )}
               <SettingsRow
                 label="Hidden Bookmarks"
                 description={
