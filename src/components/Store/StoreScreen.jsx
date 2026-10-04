@@ -5,7 +5,7 @@ import StoreDetail from './StoreDetail.jsx'
 import StoreAdmin from './StoreAdmin.jsx'
 import './Store.css'
 
-// The storefront: search, category chips, a Featured row and one row per
+// The marketplace: search, category chips, a Featured row and one row per
 // category, Play-style. Searching or picking a chip flattens the view into
 // a grid of matches. Pure presentation: the catalog, what's installed and
 // the install action all come in as props so both shells can host it.
@@ -45,10 +45,10 @@ export default function StoreScreen({
   const empty = published.length === 0
   const statusText = empty
     ? status === 'offline'
-      ? "Couldn't reach the store. Check your connection and try again."
+      ? "Couldn't reach the marketplace. Check your connection and try again."
       : status === 'loading'
-        ? 'Loading the store…'
-        : 'The store is empty.'
+        ? 'Loading the marketplace…'
+        : 'The marketplace is empty.'
     : null
 
   if (isAdmin && managing) {
@@ -66,14 +66,14 @@ export default function StoreScreen({
     <div className="store-page">
       <div className="store-header">
         <button type="button" className="store-back" onClick={onBack} title="Back" aria-label="Back">‹</button>
-        <h1 className="store-title">Store</h1>
+        <h1 className="store-title">Marketplace</h1>
         <input
           className="store-search"
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search sites"
-          aria-label="Search the store"
+          aria-label="Search the marketplace"
           autoComplete="off"
           spellCheck={false}
         />

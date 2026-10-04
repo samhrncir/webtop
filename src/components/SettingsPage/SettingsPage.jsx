@@ -438,7 +438,7 @@ export default function SettingsPage({
               {onOpenStore && (
                 <>
                   <SettingsRow
-                    label="Store"
+                    label="Marketplace"
                     description="Popular sites, ready to add to your home screen"
                   >
                     <button className="settings-action-btn" onClick={onOpenStore}>

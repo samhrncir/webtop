@@ -27,8 +27,8 @@ export default function MobileBottomBar({
         <button
           className="mobile-bottombar-btn"
           onClick={onOpenStore}
-          aria-label="Store"
-          title="Store"
+          aria-label="Marketplace"
+          title="Marketplace"
         >
           🛍️
         </button>

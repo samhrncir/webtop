@@ -99,7 +99,7 @@ describe('adding a listing', () => {
       featured: true, rank: 3, published: true, install: {},
     })
     // Back on the list once saved
-    expect(screen.getByRole('heading', { name: 'Manage store' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Manage marketplace' })).toBeInTheDocument()
   })
 
   it('refuses an unusable draft and a slug already in use', async () => {
@@ -112,10 +112,10 @@ describe('adding a listing', () => {
 
     await userEvent.type(screen.getByLabelText('Name'), 'GitHub')
     await userEvent.type(screen.getByLabelText('URL'), 'https://github.com/')
-    await userEvent.type(screen.getByLabelText('Install extras (JSON)'), '{{oops')
+    await userEvent.type(screen.getByLabelText('Extra bookmark fields (JSON)'), '{{oops')
     await userEvent.click(screen.getByRole('button', { name: 'Add listing' }))
     expect(screen.getByText('Another listing already uses this slug')).toBeInTheDocument()
-    expect(screen.getByText('Install extras must be a JSON object')).toBeInTheDocument()
+    expect(screen.getByText('Extra fields must be a JSON object')).toBeInTheDocument()
     expect(h.onSave).not.toHaveBeenCalled()
   })
 })
@@ -127,13 +127,13 @@ describe('editing a listing', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Edit GitHub' }))
     expect(screen.getByRole('heading', { name: 'Edit GitHub' })).toBeInTheDocument()
     expect(screen.getByLabelText('URL')).toHaveValue('https://www.github.com/')
-    expect(screen.getByLabelText('Install extras (JSON)')).toHaveValue(JSON.stringify({ aliases: ['hub'] }, null, 2))
+    expect(screen.getByLabelText('Extra bookmark fields (JSON)')).toHaveValue(JSON.stringify({ aliases: ['hub'] }, null, 2))
     await userEvent.type(screen.getByLabelText('Tagline'), 'Code')
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: 'id-github', slug: 'github', tagline: 'Code', install: { aliases: ['hub'] } }))
     expect(screen.getByRole('alert')).toHaveTextContent('nope')
     expect(screen.getByRole('heading', { name: 'Edit GitHub' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.getByRole('heading', { name: 'Manage store' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Manage marketplace' })).toBeInTheDocument()
   })
 })

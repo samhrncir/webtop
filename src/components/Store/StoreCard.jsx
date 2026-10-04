@@ -2,7 +2,7 @@ import React from 'react'
 import StoreIcon from './StoreIcon.jsx'
 
 // One listing in a row or grid. The card opens the detail view; the button
-// installs, or opens the site once it is installed (the Play Store pattern).
+// adds the site, or opens it once it is on the home screen (the Play Store pattern).
 export default function StoreCard({ app, installed, onSelect, onInstall, onOpen }) {
   return (
     <div className="store-card" role="listitem">
@@ -30,9 +30,9 @@ export default function StoreCard({ app, installed, onSelect, onInstall, onOpen 
           type="button"
           className="store-btn store-btn--install"
           onClick={() => onInstall(app)}
-          aria-label={`Install ${app.name}`}
+          aria-label={`Add ${app.name}`}
         >
-          Install
+          Add
         </button>
       )}
     </div>

@@ -37,7 +37,7 @@ export default function StoreAdmin({ apps, onSave, onDelete, onBack }) {
   }, [onSave])
 
   const remove = useCallback(async (app) => {
-    if (!window.confirm(`Delete "${app.name}" from the store?`)) return
+    if (!window.confirm(`Delete "${app.name}" from the marketplace?`)) return
     const { error } = await onDelete(app.id)
     setBanner(error ? `Couldn't delete ${app.name}: ${error.message}` : '')
   }, [onDelete])
@@ -61,7 +61,7 @@ export default function StoreAdmin({ apps, onSave, onDelete, onBack }) {
     <div className="store-page store-admin">
       <div className="store-header">
         <button type="button" className="store-back" onClick={onBack} title="Back" aria-label="Back">‹</button>
-        <h1 className="store-title">Manage store</h1>
+        <h1 className="store-title">Manage marketplace</h1>
         <input
           className="store-search"
           type="search"
@@ -230,9 +230,9 @@ function ListingForm({ initial, existingSlugs, onCancel, onSave }) {
                 <input type="checkbox" checked={draft.published !== false} onChange={set('published')} /> Published
               </label>
             </div>
-            {field('install', 'Install extras (JSON)', { textarea: true, rows: 3 })}
+            {field('install', 'Extra bookmark fields (JSON)', { textarea: true, rows: 3 })}
             <p className="store-admin-hint">
-              Extra bookmark fields merged in on install, e.g. {'{"aliases": ["hn"]}'}.
+              Merged into the bookmark when someone adds the site, e.g. {'{"aliases": ["hn"]}'}.
             </p>
 
             {serverError && <p className="store-admin-banner" role="alert">{serverError}</p>}

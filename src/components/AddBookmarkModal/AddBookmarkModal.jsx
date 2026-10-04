@@ -141,7 +141,7 @@ export default function AddBookmarkModal({ onClose, onAddBookmark, onAddFolder, 
             </button>
             {onOpenStore && (
               <button type="button" className="add-modal-store-link" onClick={onOpenStore}>
-                Or pick a popular site from the Store ›
+                Or pick a popular site from the Marketplace ›
               </button>
             )}
           </form>

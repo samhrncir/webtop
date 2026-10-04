@@ -45,18 +45,18 @@ describe('browsing the store', () => {
     expect(screen.getAllByText('YouTube')).toHaveLength(2)
   })
 
-  it('offers Install for new sites and Open for ones already on the home screen', async () => {
+  it('offers Add for new sites and Open for ones already on the home screen', async () => {
     const h = mount()
-    await userEvent.click(screen.getByRole('button', { name: 'Install Netflix' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add Netflix' }))
     expect(h.onInstall).toHaveBeenCalledWith(expect.objectContaining({ slug: 'netflix' }))
     await userEvent.click(screen.getByRole('button', { name: 'Open GitHub' }))
     expect(h.onOpen).toHaveBeenCalledWith('https://www.github.com/')
-    expect(screen.queryByRole('button', { name: 'Install GitHub' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add GitHub' })).not.toBeInTheDocument()
   })
 
   it('searching flattens the view into matches and says how many', async () => {
     mount()
-    await userEvent.type(screen.getByRole('searchbox', { name: 'Search the store' }), 'code')
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search the marketplace' }), 'code')
     expect(screen.getByRole('heading', { name: '1 site' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Featured' })).not.toBeInTheDocument()
     expect(screen.getByText('GitHub')).toBeInTheDocument()
@@ -81,7 +81,7 @@ describe('browsing the store', () => {
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText('All about netflix.')).toBeInTheDocument()
     expect(within(dialog).getByText('netflix.com')).toBeInTheDocument()
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Install' }))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Add' }))
     expect(h.onInstall).toHaveBeenCalledWith(expect.objectContaining({ slug: 'netflix' }))
     await userEvent.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -101,11 +101,11 @@ describe('browsing the store', () => {
 
   it('explains an empty store: loading, offline, or truly empty', () => {
     const { rerender } = render(<StoreScreen apps={[]} status="loading" installedHosts={new Set()} />)
-    expect(screen.getByRole('status')).toHaveTextContent('Loading the store')
+    expect(screen.getByRole('status')).toHaveTextContent('Loading the marketplace')
     rerender(<StoreScreen apps={[]} status="offline" installedHosts={new Set()} />)
-    expect(screen.getByRole('status')).toHaveTextContent(/reach the store/)
+    expect(screen.getByRole('status')).toHaveTextContent(/reach the marketplace/)
     rerender(<StoreScreen apps={[]} status="ready" installedHosts={new Set()} />)
-    expect(screen.getByRole('status')).toHaveTextContent('The store is empty.')
+    expect(screen.getByRole('status')).toHaveTextContent('The marketplace is empty.')
   })
 
   it('shows Manage only to admins, and goes back', async () => {
@@ -118,9 +118,9 @@ describe('browsing the store', () => {
   it('admins get a Manage button that opens the admin pages, drafts and all', async () => {
     mount({ isAdmin: true })
     await userEvent.click(screen.getByRole('button', { name: 'Manage' }))
-    expect(screen.getByRole('heading', { name: 'Manage store' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Manage marketplace' })).toBeInTheDocument()
     expect(screen.getByText('Secret')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
-    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Marketplace' })).toBeInTheDocument()
   })
 })

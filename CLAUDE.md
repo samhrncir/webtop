@@ -170,7 +170,7 @@ URL to the clipboard and shows a hint. Keep the scheme allow-lists in
 `openUrl.js` and `extension/background.js` in sync. All bookmark opens go
 through `openUrl`, never a bare `window.open`.
 
-## Store
+## Marketplace (code name: store)
 
 A Play-style catalog of popular sites (`store_apps` in Supabase, shared by
 every user, read-only unless your user id is in `store_admins`). The UI is
@@ -183,3 +183,5 @@ shows offline. Installing goes through `useHomescreen.installBookmark`.
 `supabase/seed/store_apps.json` is the listing format; `scripts/
 seed-store.mjs` loads it (`--sql` prints a statement for the SQL editor).
 A future listing-writing agent emits that same JSON and runs that script.
+In the UI it is the "Marketplace" and the action is "Add"; the code,
+CSS classes and tables keep the `store`/`install` names.

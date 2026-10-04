@@ -443,9 +443,9 @@ export default function HomeScreen({
           <button
             className="homescreen-toolbar-btn"
             onClick={onOpenStore}
-            title="Store: popular sites to add"
+            title="Marketplace: popular sites to add"
           >
-            🛍️ Store
+            🛍️ Marketplace
           </button>
           <button
             className="homescreen-toolbar-btn"

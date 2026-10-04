@@ -168,7 +168,7 @@ export function validateListing(row) {
   if (!row.slug) errors.slug = 'The slug needs at least one letter or digit'
   if (row.icon_url && !isHttpUrl(row.icon_url)) errors.icon_url = 'Icon must be an http(s) URL'
   if (row.install === null || typeof row.install !== 'object' || Array.isArray(row.install)) {
-    errors.install = 'Install extras must be a JSON object'
+    errors.install = 'Extra fields must be a JSON object'
   }
   return errors
 }
