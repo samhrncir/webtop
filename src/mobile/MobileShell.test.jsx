@@ -308,11 +308,11 @@ describe('the store on mobile', () => {
 
   it('opens from the bottom bar and installs a site onto the home screen', async () => {
     mountWithStore({ pages: [page('p1', 'a')], items: [bm('alpha', 'p1', 'a')] })
-    await userEvent.click(screen.getByRole('button', { name: 'Store' }))
-    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
-    await userEvent.click(screen.getAllByRole('button', { name: 'Install YouTube' })[0])
+    await userEvent.click(screen.getByRole('button', { name: 'Marketplace' }))
+    expect(screen.getByRole('heading', { name: 'Marketplace' })).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Add YouTube' })[0])
     // Installed at once: every card for it now offers Open
-    expect(screen.queryByRole('button', { name: 'Install YouTube' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add YouTube' })).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Open YouTube' }).length).toBeGreaterThan(0)
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByText('YouTube')).toBeInTheDocument()
@@ -322,6 +322,6 @@ describe('the store on mobile', () => {
     mountWithStore({ pages: [page('p1', 'a')], items: [] })
     await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
     await userEvent.click(screen.getByRole('button', { name: '🛍️ Browse ›' }))
-    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Marketplace' })).toBeInTheDocument()
   })
 })

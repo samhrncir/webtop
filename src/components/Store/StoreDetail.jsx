@@ -45,7 +45,7 @@ export default function StoreDetail({ app, installed, onClose, onInstall, onOpen
             </>
           ) : (
             <button type="button" className="store-btn store-btn--install store-btn--wide" onClick={() => onInstall(app)}>
-              Install
+              Add
             </button>
           )}
         </div>

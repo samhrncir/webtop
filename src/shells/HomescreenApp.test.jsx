@@ -40,9 +40,9 @@ function mount(rows, catalog = [listing]) {
 describe('the store on desktop', () => {
   it('opens from the toolbar, installs with the listing extras, and the grid shows the new app', async () => {
     mount({ pages: [page('p1', 'a')], items: [bm('alpha', 'p1', 'a')] })
-    await userEvent.click(screen.getByRole('button', { name: '🛍️ Store' }))
-    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Install GitHub' }))
+    await userEvent.click(screen.getByRole('button', { name: '🛍️ Marketplace' }))
+    expect(screen.getByRole('heading', { name: 'Marketplace' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Add GitHub' }))
     expect(screen.getByRole('button', { name: 'Open GitHub' })).toBeInTheDocument()
     expect(document.querySelector('.app-notice')).toHaveTextContent('Added GitHub to your home screen')
 
@@ -58,7 +58,7 @@ describe('the store on desktop', () => {
   it('a site already on the home screen offers Open, which opens it in a new tab', async () => {
     vi.spyOn(window, 'open').mockImplementation(() => null)
     mount({ pages: [page('p1', 'a')], items: [bm('gh', 'p1', 'a', { url: 'https://www.github.com/x' })] })
-    await userEvent.click(screen.getByRole('button', { name: '🛍️ Store' }))
+    await userEvent.click(screen.getByRole('button', { name: '🛍️ Marketplace' }))
     await userEvent.click(screen.getByRole('button', { name: 'Open GitHub' }))
     expect(window.open).toHaveBeenCalledWith('https://github.com/', '_blank', 'noopener,noreferrer')
   })
@@ -67,7 +67,7 @@ describe('the store on desktop', () => {
     mount({ pages: [page('p1', 'a')], items: [] })
     await userEvent.click(screen.getByRole('button', { name: 'Add bookmark or folder' }))
     await userEvent.click(screen.getByRole('button', { name: /pick a popular site/ }))
-    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Marketplace' })).toBeInTheDocument()
     expect(screen.queryByText('Add New')).not.toBeInTheDocument()
   })
 
@@ -75,8 +75,8 @@ describe('the store on desktop', () => {
     mount({ pages: [page('p1', 'a')], items: [] })
     await userEvent.click(screen.getByTitle('Settings'))
     await userEvent.click(screen.getByRole('button', { name: '🛍️ Browse ›' }))
-    expect(screen.getByRole('heading', { name: 'Store' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Marketplace' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Back' }))
-    expect(screen.getByRole('button', { name: '🛍️ Store' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '🛍️ Marketplace' })).toBeInTheDocument()
   })
 })
